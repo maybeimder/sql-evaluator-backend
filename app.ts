@@ -1,15 +1,15 @@
-// app.js
+// app.ts
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
 // Rutas
-import authRoutes from "./app/routes/r-auth.routes.js"
-import usersRoutes from "./app/routes/r-users.routes.js"
-import databasesRoutes from "./app/routes/r-databases.routes.js"
-import examsRoutes from "./app/routes/r-exams.routes.js"
-import assignmentsRoutes from "./app/routes/r-assignments.routes.js"
-import questionsRoutes from "./app/routes/r-questions.routes.js" 
+import authRoutes from "./app/routes/r-auth.routes"
+import usersRoutes from "./app/routes/r-users.routes"
+import databasesRoutes from "./app/routes/r-databases.routes"
+import examsRoutes from "./app/routes/r-exams.routes"
+import assignmentsRoutes from "./app/routes/r-assignments.routes"
+import questionsRoutes from "./app/routes/r-questions.routes" 
 
 // (init)
 import initTables from "./app/database/initTables.js";

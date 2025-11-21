@@ -14,21 +14,21 @@ Exams, ExamQuestions, exams
 
 // app/routes/r-exams.routes.js
 import { Router } from "express";
-import * as ae from "../controllers/r-exams.controller.js"
+import * as ae from "../controllers/r-exams.controller"
 
 const router = Router();
 
 // 🟩 [ GET ] /exams
-router.get("/", ae.exams_get );
+router.get("/", ae.getExamsList );
 
 // 🟩 [ GET ] /exams/id/:dbID
-router.get("/id/:examID", ae.id );
+router.get("/id/:examID", ae.getExamInfoByID );
 
 // 🟩 [ GET ] /exams/id/:dbID/status
-router.get("/id/:examID/status", ae.status );
+router.get("/id/:examID/status", ae.getExamStatusByID );
 
 // 🟧 [ POST ] /exams
-router.post("/", ae.exams_post );
+router.post("/", ae.createExam );
 
 
 export default router;
