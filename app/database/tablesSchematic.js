@@ -1,15 +1,16 @@
 // app/database/tablesSchematic.js
+
 const schematics = {
     "users": {
         tableName: "Users",
         description: "UserTable",
         columns: [
-            { name: "UserID", type: "integer", isPrimary: true },
-            { name: "FullName", type: "varchar(150)" },
-            { name: "Email", type: "varchar(120)" },
-            { name: "PasswordHash", type: "text" },
-            { name: "CreatedAt", type: "timestamp"},
-            { name: "UpdatedAt", type: "timestamp"},
+            { name: "UserID", type: "integer", isPrimary: true,  isNullable: false },
+            { name: "FullName", type: "varchar(150)",  isPrimary: false, isNullable: true },
+            { name: "Email", type: "varchar(120)",     isPrimary: false, isNullable: true },
+            { name: "PasswordHash", type: "text",      isPrimary: false, isNullable: true },
+            { name: "CreatedAt", type: "timestamp",    isPrimary: false, isNullable: true },
+            { name: "UpdatedAt", type: "timestamp",    isPrimary: false, isNullable: true },
         ],
     },
 
@@ -17,8 +18,8 @@ const schematics = {
         tableName: "Roles",
         description: "RolesTable",
         columns: [
-            { name: "RoleID", type: "integer", isPrimary: true },
-            { name: "RoleName", type: "varchar(50)" },
+            { name: "RoleID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "RoleName", type: "varchar(50)", isPrimary: false, isNullable: true },
         ],
     },
 
@@ -26,8 +27,8 @@ const schematics = {
         tableName: "UserRoles",
         description: "UserRolesTable",
         columns: [
-            { name: "UserID", type: "integer", isPrimary: true},
-            { name: "RoleID", type: "integer", isPrimary: true},
+            { name: "UserID", type: "integer", isPrimary: true, isNullable: false },
+            { name: "RoleID", type: "integer", isPrimary: true, isNullable: false },
         ],
     },
 
@@ -35,12 +36,12 @@ const schematics = {
         tableName: "Databases",
         description: "DatabasesTable",
         columns: [
-            { name: "DatabaseID", type: "integer", isPrimary: true },
-            { name: "Name", type: "varchar(150)" },
-            { name: "Description", type: "text" },
-            { name: "DumpFilePath", type: "text" },
-            { name: "UploadedAt", type: "timestamp"},
-            { name: "UploadedBy", type: "integer"},
+            { name: "DatabaseID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "Name", type: "varchar(150)",    isPrimary: false, isNullable: true },
+            { name: "Description", type: "text",     isPrimary: false, isNullable: true },
+            { name: "DumpFilePath", type: "text",    isPrimary: false, isNullable: true },
+            { name: "UploadedAt", type: "timestamp", isPrimary: false, isNullable: true },
+            { name: "UploadedBy", type: "integer",   isPrimary: false, isNullable: true },
         ],
     },
 
@@ -48,15 +49,15 @@ const schematics = {
         tableName: "Exams",
         description: "ExamsTable",
         columns: [
-            { name: "ExamID", type: "integer", isPrimary: true },
-            { name: "ProfessorID", type: "integer"},
-            { name: "DatabaseID", type: "integer"},
-            { name: "Title", type: "varchar(200)"},
-            { name: "Description", type: "text" },
-            { name: "StartTime", type: "timestamp"},
-            { name: "EndTime", type: "timestamp" },
-            { name: "AllowsRejoin", type: "bool"},
-            { name: "CreatedAt", type: "timestamp"},
+            { name: "ExamID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "ProfessorID", type: "integer",   isPrimary: false, isNullable: true },
+            { name: "DatabaseID", type: "integer",    isPrimary: false, isNullable: true },
+            { name: "Title", type: "varchar(200)",    isPrimary: false, isNullable: true },
+            { name: "Description", type: "text",      isPrimary: false, isNullable: true },
+            { name: "StartTime", type: "timestamp",   isPrimary: false, isNullable: true },
+            { name: "EndTime", type: "timestamp",     isPrimary: false, isNullable: true },
+            { name: "AllowsRejoin", type: "bool",     isPrimary: false, isNullable: true },
+            { name: "CreatedAt", type: "timestamp",   isPrimary: false, isNullable: true },
         ],
     },
 
@@ -64,12 +65,12 @@ const schematics = {
         tableName: "ExamQuestions",
         description: "ExamQuestionsTable",
         columns: [
-            { name: "QuestionID", type: "integer", isPrimary: true },
-            { name: "ExamID", type: "integer"},
-            { name: "QuestionText", type: "text" },
-            { name: "Value", type: "integer"},
-            { name: "OrderIndex", type: "integer" },
-            { name: "ExpectedOutput", type: "jsonb" },
+            { name: "QuestionID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "ExamID", type: "integer",       isPrimary: false, isNullable: true },
+            { name: "QuestionText", type: "text",    isPrimary: false, isNullable: true },
+            { name: "Value", type: "integer",        isPrimary: false, isNullable: true },
+            { name: "OrderIndex", type: "integer",   isPrimary: false, isNullable: true },
+            { name: "ExpectedOutput", type: "jsonb", isPrimary: false, isNullable: true },
         ],
     },
 
@@ -77,14 +78,14 @@ const schematics = {
         tableName: "Assignments",
         description: "AssignmentsTables",
         columns: [
-            { name: "AssignmentID", type: "integer", isPrimary: true },
-            { name: "StudentID", type: "integer"},
-            { name: "ExamID", type: "integer"},
-            { name: "SessionToken", type: "uuid" },
-            { name: "StartedAt", type: "timestamp" },
-            { name: "LastUpdatedAt", type: "timestamp" },
-            { name: "IsActive", type: "bool"},
-            { name: "IsBlocked", type: "bool"},
+            { name: "AssignmentID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "StudentID", type: "integer",      isPrimary: false, isNullable: true },
+            { name: "ExamID", type: "integer",         isPrimary: false, isNullable: true },
+            { name: "SessionToken", type: "uuid",      isPrimary: false, isNullable: true },
+            { name: "StartedAt", type: "timestamp",    isPrimary: false, isNullable: true },
+            { name: "LastUpdatedAt", type: "timestamp",isPrimary: false, isNullable: true },
+            { name: "IsActive", type: "bool",          isPrimary: false, isNullable: true },
+            { name: "IsBlocked", type: "bool",         isPrimary: false, isNullable: true },
         ],
     },
 
@@ -92,15 +93,15 @@ const schematics = {
         tableName: "StudentAssignmentAnswers",
         description: "StudentAssignmentAnswersTables",
         columns: [
-            { name: "StudentAssignmentAnswerID", type: "integer", isPrimary: true },
-            { name: "AssignmentID", type: "integer"},
-            { name: "QuestionID", type: "integer"},
-            { name: "Answer", type: "text" },
-            { name: "AnswerOutput", type: "jsonb" },
-            { name: "ErrorMessage", type: "text" },
-            { name: "IsCorrect", type: "bool" },
-            { name: "SubmittedAt", type: "timestamp"},
-            { name: "LastModifiedAt", type: "timestamp"},
+            { name: "StudentAssignmentAnswerID", type: "integer", isPrimary: true,  isNullable: false },
+            { name: "AssignmentID", type: "integer",             isPrimary: false, isNullable: true },
+            { name: "QuestionID", type: "integer",               isPrimary: false, isNullable: true },
+            { name: "Answer", type: "text",                      isPrimary: false, isNullable: true },
+            { name: "AnswerOutput", type: "jsonb",               isPrimary: false, isNullable: true },
+            { name: "ErrorMessage", type: "text",                isPrimary: false, isNullable: true },
+            { name: "IsCorrect", type: "bool",                   isPrimary: false, isNullable: true },
+            { name: "SubmittedAt", type: "timestamp",            isPrimary: false, isNullable: true },
+            { name: "LastModifiedAt", type: "timestamp",         isPrimary: false, isNullable: true },
         ],
     },
 
@@ -108,13 +109,13 @@ const schematics = {
         tableName: "AuditLogs",
         description: "AuditLogsTables",
         columns: [
-            { name: "LogID", type: "integer", isPrimary: true },
-            { name: "UserID", type: "integer"},
-            { name: "ExamID", type: "integer" },
-            { name: "Description", type: "text" },
-            { name: "LoggedAt", type: "timestamp"},
-            { name: "LogIP", type: "varchar(60)" },
-            { name: "UserAgent", type: "text" },
+            { name: "LogID", type: "integer",    isPrimary: true,  isNullable: false },
+            { name: "UserID", type: "integer",   isPrimary: false, isNullable: true },
+            { name: "ExamID", type: "integer",   isPrimary: false, isNullable: true },
+            { name: "Description", type: "text", isPrimary: false, isNullable: true },
+            { name: "LoggedAt", type: "timestamp", isPrimary: false, isNullable: true },
+            { name: "LogIP", type: "varchar(60)",  isPrimary: false, isNullable: true },
+            { name: "UserAgent", type: "text",     isPrimary: false, isNullable: true },
         ],
     },
 
@@ -122,15 +123,14 @@ const schematics = {
         tableName: "Emails",
         description: "EmailsTable",
         columns: [
-            { name: "EmailID", type: "integer", isPrimary: true },
-            { name: "UserID", type: "integer"},
-            { name: "Token", type: "uuid" },
-            { name: "CreatedAt", type: "timestamp"},
-            { name: "ExpiresAt", type: "timestamp" },
-            { name: "Used", type: "bool"},
+            { name: "EmailID", type: "integer",   isPrimary: true,  isNullable: false },
+            { name: "UserID", type: "integer",    isPrimary: false, isNullable: true },
+            { name: "Token", type: "uuid",        isPrimary: false, isNullable: true },
+            { name: "CreatedAt", type: "timestamp", isPrimary: false, isNullable: true },
+            { name: "ExpiresAt", type: "timestamp", isPrimary: false, isNullable: true },
+            { name: "Used", type: "bool",         isPrimary: false, isNullable: true },
         ]
     }
-
-}
+};
 
 export default schematics;
