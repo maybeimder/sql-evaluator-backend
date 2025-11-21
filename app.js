@@ -21,7 +21,8 @@ app.get("/", (req, res) => {
 
 // Levantar el servidor
 app.listen(PORT, async () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 
+  // En caso tal no existan las tablas, descomentar 
   // await initTables();
 });
