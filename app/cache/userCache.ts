@@ -1,0 +1,38 @@
+// app/cache/userCache.ts
+
+export type UserCache = {
+    UserID: number;
+    RobleID: string;
+    FullName: string;
+    Email: string;
+    Roles: number[];
+    ExpiresAt: number;
+};
+
+const CACHE_TTL = 5 * 60 * 1000;
+
+const userCache = new Map<string, UserCache>();
+
+export function getUserCache(robleID: string): UserCache | null {
+    const entry = userCache.get(robleID);
+
+    if (!entry) return null;
+
+    if (entry.ExpiresAt < Date.now()) {
+        userCache.delete(robleID);
+        return null;
+    }
+
+    return entry;
+}
+
+export function setUserCache(robleID: string, data: Omit<UserCache, "ExpiresAt">) {
+    userCache.set(robleID, {
+        ...data,
+        ExpiresAt: Date.now() + CACHE_TTL
+    });
+}
+
+export function invalidateUserCache(robleID: string) {
+    userCache.delete(robleID);
+}

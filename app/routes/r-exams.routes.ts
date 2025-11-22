@@ -23,7 +23,7 @@ router.get("/", ae.getExamsList );
 
 // 🟩 [ GET ] /exams/id/:dbID
 router.get("/id/:examID", ae.getExamInfoByID );
-
+    
 // 🟩 [ GET ] /exams/id/:dbID/status
 router.get("/id/:examID/status", ae.getExamStatusByID );
 

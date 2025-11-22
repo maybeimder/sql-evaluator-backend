@@ -11,20 +11,6 @@ Tablas utilizadas:
 Users, Roles, UserRoles
 */
 
-/* 
-Todo lo relauionado con autenticauión:
-
-    - login
-    - logout
-    - refresh tokens
-    - validación por email (token de emails table)
-    - bloqueo de múltiples sesiones
-    - seguridad del profesor (token enviado al correo)
-
-Tablas utilizadas:
-Users, UserRoles, Emails, AuditLogs
-*/
-
 // app/routes/r-users.routes.js
 import { Router } from "express";
 import * as au from "../controllers/r-users.controller"

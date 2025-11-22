@@ -4,9 +4,9 @@
         "description" : "UserTable",
         "columns"    : [
             { "name"  : "UserID"    , "type": "integer",         "isPrimary": true,  "isNullable": false },
+            { "name"  : "RobleID"    , "type": "integer",         "isPrimary": true,  "isNullable": false },
             { "name"  : "FullName"  , "type": "varchar(150)",  "isPrimary": false, "isNullable": true },
             { "name"  : "Email"     , "type": "varchar(120)",     "isPrimary": false, "isNullable": true },
-            { "name"  : "PasswordHash", "type": "text",      "isPrimary": false, "isNullable": true },
             { "name"  : "CreatedAt" , "type": "timestamp",    "isPrimary": false, "isNullable": true },
             { "name"  : "UpdatedAt", "type": "timestamp",    "isPrimary": false, "isNullable": true }
         ]

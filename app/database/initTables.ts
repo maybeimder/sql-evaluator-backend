@@ -20,7 +20,7 @@ async function createTable( body : any ) {
     */  
    
     try {
-        const res = await robleClient.post('/create-table', body);
+        const res = await robleClient().post('/create-table', body);
         console.log(`${body.tableName}: ` , res.status)
     } catch (e) {
         console.error(e)
