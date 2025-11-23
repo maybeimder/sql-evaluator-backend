@@ -13,7 +13,7 @@ import questionsRoutes from "./app/routes/r-questions.routes"
 
 // (init)
 import initTables from "./app/database/initTables";
-import { requireAuth } from "./app/middlewares/auth.middleware";
+import { requireAuth, requireRole } from "./app/middlewares/auth.middleware";
 import { robleClient } from "./app/connection/robleClient";
 
 dotenv.config();
@@ -41,6 +41,18 @@ app.get("/", (req, res) => {
 
 // Test Middleware
 app.get("/test-auth", requireAuth, (req, res) => {
+    res.json({
+        ok: true,
+        robleUser: req.robleUser,
+        userCache: req.userCache
+    });
+});
+
+// Test Middleware
+app.get("/test-auth2", 
+  requireAuth, 
+  requireRole("ADMIN"),
+  (req, res) => {
     res.json({
         ok: true,
         robleUser: req.robleUser,
