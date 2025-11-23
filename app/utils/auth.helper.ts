@@ -52,7 +52,7 @@ export async function loadUserToCache( token:string, robleUser:any ) {
 
         setUserCache(robleUser.sub, cache);
 
-        return cache;
+        return getUserCache(robleUser.sub);
     }
 
 

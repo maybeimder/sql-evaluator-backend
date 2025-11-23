@@ -22,7 +22,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
-app.use(cors());
+app.use(cors({ origin: (origin, callback ) => { return callback(null, true) } }));
 app.use(express.json());
 
 // Registrar rutas y schemas
@@ -43,29 +43,50 @@ app.get("/", (req, res) => {
 app.get("/test-auth", requireAuth, (req, res) => {
     res.json({
         ok: true,
-        robleUser: req.robleUser,
-        userCache: req.userCache
+        robleUser: req.auth.roble,
+        userCache: req.auth.user
     });
 });
 
 // Test Middleware
-app.get("/test-auth2", 
+app.get("/test-admin-level", 
   requireAuth, 
   requireRole("ADMIN"),
   (req, res) => {
     res.json({
         ok: true,
-        robleUser: req.robleUser,
-        userCache: req.userCache
+        robleUser: req.auth.roble,
+        userCache: req.auth.user
     });
 });
 
 // Test Middleware
-app.get("/test-login", async (req, res) => {
-    const result = await robleClient("auth").post("/login", {
-      email: "aferrerj@uninorte.edu.co",
-      password: process.env.MI_CONTRA ,
-    }); 
+app.get("/test-professor-level", 
+  requireAuth, 
+  requireRole("PROFESSOR"),
+  (req, res) => {
+    res.json({
+        ok: true,
+        robleUser: req.auth.roble,
+        userCache: req.auth.user
+    });
+});
+
+// Test Middleware
+app.get("/test-student-level", 
+  requireAuth, 
+  requireRole("STUDENT"),
+  (req, res) => {
+    res.json({
+        ok: true,
+        robleUser: req.auth.roble,
+        userCache: req.auth.user
+    });
+});
+
+// Test Middleware
+app.post("/test-login", async (req, res) => {
+    const result = await robleClient("auth").post("/login", req.body); 
 
     const { accessToken, refreshToken } = result.data;
     
@@ -84,6 +105,7 @@ app.get("/test-login", async (req, res) => {
     return res.json({
         ok: true,
         accessToken: accessToken,
+        refreshToken: req.cookies?.refreshToken,
         message: "WAAAA" 
     })
 });

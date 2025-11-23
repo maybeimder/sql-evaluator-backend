@@ -24,9 +24,11 @@ export interface RobleUser {
 declare global {
     namespace Express {
         interface Request {
-            robleUser?: RobleUser;
-            userCache?: UserCache;
-            newToken?: string;
+            auth: {
+                roble?: RobleUser;
+                user?: UserCache;
+                token?: string;
+            }
         }
     }
 }

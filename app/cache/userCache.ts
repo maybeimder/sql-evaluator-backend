@@ -9,10 +9,12 @@ export type UserCache = {
     ExpiresAt: number;
 };
 
+// Definir el tiempo de vida del caché
 const CACHE_TTL = 5 * 60 * 1000;
 
 const userCache = new Map<string, UserCache>();
 
+// Getter 
 export function getUserCache(robleID: string): UserCache | null {
     const entry = userCache.get(robleID);
 
@@ -26,6 +28,7 @@ export function getUserCache(robleID: string): UserCache | null {
     return entry;
 }
 
+// Settet
 export function setUserCache(robleID: string, data: Omit<UserCache, "ExpiresAt">) {
     userCache.set(robleID, {
         ...data,
@@ -33,6 +36,7 @@ export function setUserCache(robleID: string, data: Omit<UserCache, "ExpiresAt">
     });
 }
 
+// Para los bloqueos
 export function invalidateUserCache(robleID: string) {
     userCache.delete(robleID);
 }

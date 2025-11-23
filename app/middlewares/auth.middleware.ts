@@ -1,12 +1,15 @@
 // app/middlewares/auth.middleware.ts
-import jwt from "jsonwebtoken";
 import type { Middleware } from "../types/types";
 
-import { verifyRobleToken, getUserID, getUserRoles, refreshRobleToken } from "../models/Auth.model";
-import { getUserCache, setUserCache } from "../cache/userCache";
+import { verifyRobleToken } from "../models/Auth.model";
+import { loadUserToCache, performTokenRefresh } from "../utils/auth.helper";
 
+/* ================================================================== */
 export const requireAuth: Middleware = async (req, res, next) => {
+
     try {
+        if (!req.auth) req.auth = {};
+
         // Leer el token de ROBLE desde la petición
         const header = req.headers.authorization;
 
@@ -16,82 +19,60 @@ export const requireAuth: Middleware = async (req, res, next) => {
 
         // Extraer el token y validarlo con ROBLE
         const token = header.split(" ")[1];
-        let verify = await verifyRobleToken(token)
 
-        if (!verify?.valid && verify.expired) {
-            const refreshed = await refreshRobleToken(req.cookies?.refreshToken);
+        // [1] Validar token principal
+        let verify = await verifyRobleToken(token);
 
-            if (!refreshed) {
-                return res.status(401).json({ error: "Expirado" })
+        // [2] Si está expirado -> refrescarlo
+        if ( ! verify?.valid && verify.expired) {
+            const refreshed = await performTokenRefresh( req.cookies?.refreshToken, res );
+
+            if ( ! refreshed ) {
+                return res.status(401).json({ error: "Token Expirado y no refrescable" })
             }
 
-            // Guardar en cookie dinamicamente los refresh tokens
-            res.cookie("refreshToken", refreshed.refreshToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: "strict",
-                path: "/",
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-            });
+            // Reemplazar los datos del token
+            req.auth.token = refreshed.newToken;
 
-            verify = await verifyRobleToken(refreshed.accessToken);
-
-            if (!verify.valid && !verify.user ) { return res.status(401).json({ error: "No se pudo actualizar el token" }) }
-            
-            req.newToken = refreshed.accessToken;
+            verify = {
+                valid: true,
+                expired: false,
+                user: refreshed.user
+            };
         }
 
-        if (!verify?.valid || !verify.user) { return res.status(401).json({ error: "Token inválido o vencido." }) }
+        // [3] Si es inválido
+        if ( ! verify?.valid || ! verify.user ){return res.status(401).json({error:"Token inválido"})};
 
         const robleUser = verify.user
 
-        // OPTIMIZACION: Cache de la info
-        const cached = getUserCache(robleUser.sub)
+        // [4] Bajar el cache (si existe)
+        const cache = await loadUserToCache(req.auth.token || token, robleUser);
+        if ( ! cache ){return res.status(401).json({error:"Token inválido o vencido."})};
 
-        if (cached) {
-            req.userCache = cached;
-            req.robleUser = robleUser;
-            return next();
+        // [5] Inyectar en req
+        req.auth.roble = robleUser; 
+        req.auth.user = cache;
 
-        } else {
-            if (!token) { return res.status(500).json({ error: "token no configurado" }) };
-            
-            const user = await getUserID(token, robleUser.sub)
-
-            if (!user) { return res.status(403).json({ error: "No se encontró el usuario en el sistema" }) };
-
-            const userRoles = await getUserRoles(token, user?.UserID);
-            const roles = Array.isArray(userRoles) ? userRoles.map(r => r.RoleID) : [];
-
-            setUserCache(robleUser.sub, {
-                UserID: user?.UserID,
-                RobleID: user?.RobleID,
-                FullName: user?.FullName,
-                Email: user?.Email,
-                Roles: roles
-            });
-
-            req.userCache = getUserCache(robleUser.sub)!;
-            req.robleUser = robleUser;
-            return next();
-
-        }
+        return next();
 
     } catch (e) {
         console.log(e)
+        return res.status(500).json({ error: "Error interno del servidor." });
     }
 }
 
+/* ================================================================== */
 export const requireRole = (level : "ADMIN" | "PROFESSOR" | "STUDENT"): Middleware => {
     const roleMap = {
-        "ADMIN": 1,
-        "PROFESSOR": 2,
-        "STUDENT": 3
+        "ADMIN"       : 1,
+        "PROFESSOR"   : 2,
+        "STUDENT"     : 3
     };
 
     return async (req, res, next) => {
         try {
-            const userCache = req.userCache;
+            const userCache = req.auth.user;
 
             if (!userCache) {
                 return res.status(500).json({ error: "User cache no disponible." });
