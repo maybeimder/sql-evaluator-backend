@@ -17,10 +17,11 @@ export const requireAuth: Middleware = async (req, res, next) => {
         }
 
         // Extraer el token y validarlo con ROBLE
-        const token = header.split(" ")[1];
+        const token = header.replace("Bearer ", "").trim();
 
         // [1] Validar token principal
         let verify = await verifyRobleToken(token);
+        if ( verify?.valid && ! verify.expired ){ req.auth.token = token }
 
         // [2] Si está expirado -> refrescarlo
         if ( ! verify?.valid && verify.expired) {
@@ -56,7 +57,6 @@ export const requireAuth: Middleware = async (req, res, next) => {
         return next();
 
     } catch (e) {
-        console.log(e)
         return res.status(500).json({ error: "Error interno del servidor." });
     }
 }

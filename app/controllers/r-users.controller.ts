@@ -13,6 +13,7 @@ export const getUserByID : Controller = (req, res) => {
   res.json({ message: "Get user by ID" });
 };
 
-export const editUserRolesByID : Controller = (req, res) => {
-  res.json({ message: "Edit userRoles OK" });
+export const editUserRolesByID : Controller = async (req, res) => {
+    
+
 };

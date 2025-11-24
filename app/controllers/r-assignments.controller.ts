@@ -5,7 +5,7 @@ export const createAssignment : Controller = (req, res) => {
   res.json({ message: "New Assignment" });
 };
 
-export const getAssignmentById : Controller = (req, res) => {
+export const searchAssignmentById : Controller = (req, res) => {
   res.json({ message: "Get assignments by examID" });
 };
 

@@ -6,6 +6,7 @@ export type UserCache = {
     FullName: string;
     Email: string;
     Roles: number[];
+    Code?: number;
     ExpiresAt: number;
 };
 

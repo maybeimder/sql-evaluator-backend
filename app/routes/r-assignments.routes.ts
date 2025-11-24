@@ -24,7 +24,7 @@ const router = Router();
 router.post("/", aa.createAssignment );
 
 // 🟩 [ GET ] /assignments/id/:assignmentID
-router.get("/id/:assignmentID", aa.getAssignmentById );
+router.get("/id/:assignmentID", aa.searchAssignmentById );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/start
 router.get("/id/:assignmentID/start", aa.startAssignment );

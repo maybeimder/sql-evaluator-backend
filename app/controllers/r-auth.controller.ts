@@ -1,7 +1,8 @@
 // app/controllers/r-auth.controller.ts
+import { deletePendingCode, getPendingCode, savePendingCode } from "../cache/pendingCache";
 import { COOKIE_SETTINGS } from "../config/config";
 import { loginRoble, newRobleUser, verifyRobleEmail } from "../models/Auth.model";
-import { getUserID, newUser, newUserRole } from "../models/Users.model";
+import { getUserID, newUser, newUserRole, UserRegister } from "../models/Users.model";
 
 import type { Controller } from "../types/types";
 import { performTokenRefresh } from "../utils/auth.helper";
@@ -9,9 +10,10 @@ import { performTokenRefresh } from "../utils/auth.helper";
 // [1] Registro de usuario
 export const registerUser: Controller = async (req, res) => {
 
-    const { email, password, name } = req.body;
+    const { email, password, name, code } : 
+          { email:string, password:string, name:string, code:number } = req.body;
 
-    if (!email || !password || !name)
+    if (!email || !password || !name || !code)
         return res.status(400).json({ error: "Faltan campos" });
 
     const robleResponse = await newRobleUser(email, password, name)
@@ -24,6 +26,7 @@ export const registerUser: Controller = async (req, res) => {
         return res.status(400).json({ error: robleResponse.message });
 
     if (robleResponse.message.includes("Revisa tu correo"))
+        savePendingCode(email, code)
         return res.json({ ok: true, message: robleResponse.message });
 
 };
@@ -68,22 +71,34 @@ export const loginUser: Controller = async (req, res) => {
     });
 
     // Checkear si ya existe ese usuario en la tabla Users (shadow)
-    let shadowUser = await getUserID(robleLoginResponse.accessToken, robleLoginResponse.user.RobleID)
+    let shadowUser : UserRegister | null = await getUserID(robleLoginResponse.accessToken, robleLoginResponse.user.RobleID)
 
     // Si no existe, registrarlo como estudiante
     if (!shadowUser) {
+        const code = getPendingCode(email);
+
+        if (!code)
+            return res.status(400).json({ error: "Código no encontrado en cache" });
+
         shadowUser = await newUser(
             robleLoginResponse.accessToken,
             email,
             robleLoginResponse.user.name,
-            robleLoginResponse.user.RobleID
-        )
+            robleLoginResponse.user.RobleID,
+            code
+        );
+
+        if ( ! shadowUser )
+            return res.status(500).json({ error: "No se pudo registrar usuario en DB" });
+
 
         newUserRole(
             robleLoginResponse.accessToken,
             shadowUser.UserID,
-            [2]
-        )
+            [3]
+        );
+
+        deletePendingCode(email);
     };
 
     return res.json({

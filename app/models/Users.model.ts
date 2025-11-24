@@ -6,6 +6,7 @@ import { robleClient } from "../connection/robleClient";
 export type UserRegister = {
     UserID: string,
     FullName: string,
+    Code: number,
     Email: string,
     CreatedAt: string,
     UpdatedAt: string,
@@ -13,7 +14,7 @@ export type UserRegister = {
 }
 
 
-export async function newUser(token: string, email: string, name: string, robleID: string) {
+export async function newUser(token: string, email: string, name: string, robleID: string, code:number) {
     const newUserID = crypto.randomUUID();
     const now = new Date().toISOString();
 
@@ -24,6 +25,7 @@ export async function newUser(token: string, email: string, name: string, robleI
                 {
                     UserID: newUserID,
                     FullName: name,
+                    Code: code,
                     Email: email,
                     RobleID: robleID,
                     CreatedAt: now,
@@ -36,9 +38,15 @@ export async function newUser(token: string, email: string, name: string, robleI
         }
     );
 
+    if ( !res.data ){
+        console.error("[ROBLE_INSERT_ERROR]", res.data);
+        return null;
+    }
+
     return {
         UserID: newUserID,
         FullName: name,
+        Code: code,
         Email: email,
         RobleID: robleID,
         CreatedAt: now,

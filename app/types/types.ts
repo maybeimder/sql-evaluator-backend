@@ -1,6 +1,7 @@
 // app/types/types.ts
 import type { Request, Response, NextFunction } from "express";
 import type { UserCache } from "../cache/userCache";
+import { AssignmentRegister } from "../models/Assignments.model";
 
 export type Controller = (
     req   : Request,
@@ -29,6 +30,7 @@ declare global {
                 user?: UserCache;
                 token?: string;
             }
+            assignment : AssignmentRegister
         }
     }
 }

@@ -13,6 +13,7 @@
     <input type="email" id="regEmail" placeholder="email">
     <input type="text" id="regName" placeholder="nombre">
     <input type="password" id="regPass" placeholder="contraseña">
+    <input type="number" id="regCode" placeholder="codigo academico">
     <button onclick="registerUser()">Registrar</button>
 
     <h3>Verificar Email</h3>
@@ -54,6 +55,7 @@ async function doFetch(url, method="POST", body=null, auth=false) {
     const config = {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
     };
 
     if (body) config.body = JSON.stringify(body);
@@ -72,9 +74,10 @@ async function registerUser() {
     const email = document.getElementById("regEmail").value;
     const password = document.getElementById("regPass").value;
     const name = document.getElementById("regName").value;
+    const code = document.getElementById("regCode").value;
 
     const out = await doFetch(API + "/register", "POST", {
-        email, password, name
+        email, password, name, code
     });
 
     log(out);
