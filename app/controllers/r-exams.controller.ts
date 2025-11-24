@@ -1,34 +1,67 @@
 // app/controllers/r-exams.controller.ts
 import { listAllExams, listProfessorExams, listStudentExams, newExam } from "../models/Exams.model";
+import { addMinutes } from "../utils/exams.helper";   
 import type { Controller } from "../types/types"
+import { NewQuestionInput, newQuestions } from "../models/Questions.model";
 
-export const createExam : Controller = async (req, res) => {
+export const createExam: Controller = async (req, res) => {
     const token = req.auth.token;
     const professor = req.auth.user;
+    const questions = req.body.questions;
 
-    if ( ! token )
+    console.log(token)
+    console.log(professor)
+    console.log(questions)
+
+    if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
 
-    if ( ! professor?.Roles.includes(2) && ! professor?.Roles.includes(1) )
+    if (!professor?.Roles.includes(2) && !professor?.Roles.includes(1))
         return res.status(403).json({ error: "No tiene permisos para crear examenes" });
 
-    const { ProfessorID, DatabaseID, Title, Description, StartTime, EndTime, AllowsRejoin, CreatedAt } = req.body;
+    const {
+        Title,
+        Description,
+        StartTime,
+        Duration,
+        DatabaseID,
+        AllowsRejoin
+    } = req.body;
 
-    if ( ! ProfessorID || ! Title )
+    if (!StartTime || !Title || !Duration)
         return res.status(400).json({ error: "Faltan campos" });
 
-    const robleResponse = await newExam( token, ProfessorID, Title )
+    const EndTime = addMinutes(StartTime, Duration);
 
-    if (!robleResponse)
+    const newExamRecord = await newExam(
+        token,
+        professor.UserID,
+        Title,
+        DatabaseID ?? null,
+        Description ?? null,
+        StartTime,
+        EndTime,
+        AllowsRejoin ?? false
+    );
+
+    if (!newExamRecord)
         return res.status(500).json({ error: "Error Inesperado creando el examen" });
 
-    return res.status(200).json({ ok:true, exam:robleResponse });
-};
+    await newQuestions( token, questions.map((p:NewQuestionInput) => ({
+        ExamID          : newExamRecord.ExamID,
+        QuestionTitle   : p.QuestionTitle,
+        QuestionText    : p.QuestionText,
+        ExpectedOutput  : p.ExpectedOutput,
+        SolutionExample : p.SolutionExample,
+        Value           : p.Value
+    })));
 
+    return res.status(200).json({ ok: true, exam: newExamRecord, questions: questions });
+};
 
 export const getExamsList: Controller = async (req, res) => {
     const token = req.auth.token;
-    const user  = req.auth.user;
+    const user = req.auth.user;
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
@@ -54,13 +87,12 @@ export const getExamsList: Controller = async (req, res) => {
     return res.status(403).json({ error: "Rol no reconocido" });
 };
 
-
-export const getExamInfoByID : Controller = (req, res) => {
-  res.json({ message: "Get exam info by ID" });
+export const getExamInfoByID: Controller = (req, res) => {
+    res.json({ message: "Get exam info by ID" });
 };
 
-export const getExamStatusByID : Controller = (req, res) => {
-  res.json({ message: "Get exam status by ID" });
+export const getExamStatusByID: Controller = (req, res) => {
+    res.json({ message: "Get exam status by ID" });
 };
 
 

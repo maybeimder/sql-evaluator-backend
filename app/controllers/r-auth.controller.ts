@@ -1,8 +1,9 @@
 // app/controllers/r-auth.controller.ts
 import { deletePendingCode, getPendingCode, savePendingCode } from "../cache/pendingCache";
+import { invalidateUserCache } from "../cache/userCache";
 import { COOKIE_SETTINGS } from "../config/config";
 import { loginRoble, newRobleUser, verifyRobleEmail } from "../models/Auth.model";
-import { getUserID, newUser, newUserRole, UserRegister } from "../models/Users.model";
+import { getUserID, getUserRoles, newUser, newUserRole, UserRegister } from "../models/Users.model";
 
 import type { Controller } from "../types/types";
 import { performTokenRefresh } from "../utils/auth.helper";
@@ -31,7 +32,6 @@ export const registerUser: Controller = async (req, res) => {
 
 };
 
-
 export const verifyEmail: Controller = async (req, res) => {
 
     const { email, code } = req.body;
@@ -50,7 +50,6 @@ export const verifyEmail: Controller = async (req, res) => {
     });
 
 };
-
 
 export const loginUser: Controller = async (req, res) => {
     const { email, password } = req.body;
@@ -91,7 +90,6 @@ export const loginUser: Controller = async (req, res) => {
         if ( ! shadowUser )
             return res.status(500).json({ error: "No se pudo registrar usuario en DB" });
 
-
         newUserRole(
             robleLoginResponse.accessToken,
             shadowUser.UserID,
@@ -100,6 +98,12 @@ export const loginUser: Controller = async (req, res) => {
 
         deletePendingCode(email);
     };
+
+    console.log("USER LOGUEADO CORRECTAMENTE", shadowUser)
+
+    // 🔥 OBTENER ROLES
+    const roles = await getUserRoles(robleLoginResponse.accessToken, shadowUser.UserID);
+    shadowUser.Roles = roles.map(r => r.RoleID);
 
     return res.json({
         ok: true,
@@ -110,9 +114,31 @@ export const loginUser: Controller = async (req, res) => {
 
 };
 
-
 export const logoutUser: Controller = (req, res) => {
-    res.json({ message: "Logout OK" });
+    try {
+        // 1. Borrar refreshToken
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.STATE !== "dev",
+            sameSite: "strict",
+            path: "/",
+        });
+
+        // 2. Borrar cache interno si existe
+        if (req.auth?.roble?.sub) {
+            invalidateUserCache(req.auth.roble.sub);
+        }
+
+        // 3. (Opcional) borrar también pending codes si venía registrándose
+        if (req.auth?.user?.Email) {
+            deletePendingCode(req.auth.user.Email);
+        }
+
+        return res.json({ ok: true, message: "Sesión cerrada correctamente" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Error cerrando sesión" });
+    }
 };
 
 export const refreshToken: Controller = async (req, res) => {

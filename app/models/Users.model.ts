@@ -10,9 +10,9 @@ export type UserRegister = {
     Email: string,
     CreatedAt: string,
     UpdatedAt: string,
-    RobleID: string
+    RobleID: string,
+    Roles?: number[]
 }
-
 
 export async function newUser(token: string, email: string, name: string, robleID: string, code:number) {
     const newUserID = crypto.randomUUID();
@@ -54,7 +54,6 @@ export async function newUser(token: string, email: string, name: string, robleI
     };
 }
 
-
 export async function newUserRole(token: string, userID: string, roles: number[]) {
 
     const records = roles.map(roleID => ({
@@ -87,7 +86,6 @@ export async function getUserID(token: string, robleID: string) {
     return res.data[0] ?? null;
 
 }
-
 
 // Lista los roles del usuario
 export async function getUserRoles(token: string, UserID: string) {
