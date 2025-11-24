@@ -1,4 +1,5 @@
 import { getUserCache, setUserCache } from "../cache/userCache";
+import { COOKIE_SETTINGS } from "../config/config";
 import { refreshRobleToken, verifyRobleToken } from "../models/Auth.model";
 import { getUserID, getUserRoles } from "../models/Users.model";
 
@@ -7,15 +8,21 @@ export async function performTokenRefresh(refreshToken?: string, res?: any) {
     if ( ! refreshToken ) return null;
 
     const refreshed = await refreshRobleToken(refreshToken);
-    if (!refreshed) { return null }
+
+    // Si el token de refreshed falló pide un nuevo login
+    if (!refreshed) { 
+        res.clearCookie("refreshToken", {
+            ...COOKIE_SETTINGS,
+            maxAge: 0
+        }); 
+
+        return null 
+    }
 
     // Guardar en cookie dinamicamente los refresh tokens
     res.cookie("refreshToken", refreshed.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        ...COOKIE_SETTINGS,
+        maxAge: 24 * 60 * 60 * 1000,
     });
 
     // Validar el nuevo access token obetenido
