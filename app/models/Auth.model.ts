@@ -15,14 +15,75 @@ type VerifyTokenResponse = {
     expired : boolean;
 }
 
-type UserRegister = {
-    _id       : string,
-    UserID    : number,
-    FullName  : string,
-    Email     : string,
-    CreatedAt : string,
-    UpdatedAt : string,
-    RobleID   : string
+// Crear un nuevo usuario en ROBLE
+export async function newRobleUser ( email:string, password:string, name:string ) 
+: Promise<{ statusCode:number; message:string } | null> {
+    try {
+        const res = await robleClient("auth").post("/signup", {
+            email: email,
+            password: password,
+            name: name
+        });
+
+        return {
+            statusCode: res.status, 
+            message: res.data?.message
+        }
+    
+    } catch (error) {
+        console.error("[ROBLE REGISTER ERROR]:", error)
+        return null;
+    } 
+}
+
+
+// Verifica el codigo de confirmación de un usuario
+export async function verifyRobleEmail( email:string, code:number ) {
+    try {
+        const res = await robleClient("auth").post("/verify-email", {
+            email: email,
+            code: code
+        });
+
+        return {
+            statusCode: res.status, 
+            message: res.data?.message
+        }
+    } catch (error) {
+        console.error("[ROBLE VERIFY ERROR]:", error)
+        return null;
+    }
+}
+
+
+export async function loginRoble ( email:string, password:string ) {
+    try {
+        const result : {
+            data : {
+                accessToken    : string,
+                refreshToken  : string,
+                user: {
+                    id        : string,
+                    role      : string,
+                    name      : string
+                }
+            } 
+        } = await robleClient("auth").post("/login", {
+            email: email,
+            password: password
+        }); 
+
+        const { accessToken, refreshToken, user } = result.data;
+        
+        if ( ! refreshToken || ! accessToken || ! user ) 
+            return null;
+
+        return result.data
+        
+    } catch (error) {
+        console.error("[ROBLE LOGIN ERROR]:", error)
+        return null;
+    }
 }
 
 
@@ -52,38 +113,6 @@ export async function verifyRobleToken (token: string) {
     }
 }
 
-// Toma un user basdao en el ROBLEID
-export async function getUserID( token : string,  robleID : string ) {
-    try {
-        const res = await robleClient().get<Array<UserRegister>>("/read", {
-            headers: { Authorization: `Bearer ${token}`},
-            params: { tableName:"Users", RobleID: robleID }
-        });
-
-        return res.data[0] ?? null;
-
-    } catch (error) {
-        console.error("[ROBLE READ ERROR]:", error)
-        return null;
-    } 
-}
-
-
-// Lista los roles del usuario
-export async function getUserRoles( token : string,  UserID : number ) {
-    try {
-        const res = await robleClient().get<Array<{UserID:string, RoleID:number}>>("/read", {
-            headers: { Authorization: `Bearer ${token}`},
-            params: { tableName:"UserRoles", UserID: UserID }
-        });
-
-        return res.data;
-
-    } catch (error) {
-        console.error("[ROBLE READ ROLES ERROR]:", error)
-        return null;
-    } 
-}
 
 // Refresca haciendo uso del refresh-token
 export async function refreshRobleToken( refreshToken : string ) {

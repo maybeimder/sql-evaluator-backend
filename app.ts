@@ -11,10 +11,14 @@ import examsRoutes from "./app/routes/r-exams.routes"
 import assignmentsRoutes from "./app/routes/r-assignments.routes"
 import questionsRoutes from "./app/routes/r-questions.routes" 
 
+// Middlewares
+import { requireAuth } from "./app/middlewares/auth.middleware";
+import { requireRole } from "./app/middlewares/roles.middleware"
+
 // (init)
 import initTables from "./app/database/initTables";
-import { requireAuth, requireRole } from "./app/middlewares/auth.middleware";
 import { robleClient } from "./app/connection/robleClient";
+
 
 dotenv.config();
 
@@ -86,28 +90,7 @@ app.get("/test-student-level",
 
 // Test Middleware
 app.post("/test-login", async (req, res) => {
-    const result = await robleClient("auth").post("/login", req.body); 
 
-    const { accessToken, refreshToken } = result.data;
-    
-    if ( !refreshToken || !accessToken ) {
-      return res.status(500).json({ error: "NAAA AMFASIMFAISMFA"})
-    }
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.json({
-        ok: true,
-        accessToken: accessToken,
-        refreshToken: req.cookies?.refreshToken,
-        message: "WAAAA" 
-    })
 });
 
 

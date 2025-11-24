@@ -1,7 +1,7 @@
 // app/cache/userCache.ts
 
 export type UserCache = {
-    UserID: number;
+    UserID: string;
     RobleID: string;
     FullName: string;
     Email: string;

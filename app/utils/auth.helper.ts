@@ -1,5 +1,7 @@
 import { getUserCache, setUserCache } from "../cache/userCache";
-import { getUserID, getUserRoles, refreshRobleToken, verifyRobleToken } from "../models/Auth.model";
+import { refreshRobleToken, verifyRobleToken } from "../models/Auth.model";
+import { getUserID, getUserRoles } from "../models/Users.model";
+
 
 export async function performTokenRefresh(refreshToken?: string, res?: any) {
     if ( ! refreshToken ) return null;
@@ -54,8 +56,5 @@ export async function loadUserToCache( token:string, robleUser:any ) {
 
         return getUserCache(robleUser.sub);
     }
-
-
-    
 }
 

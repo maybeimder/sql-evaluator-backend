@@ -5,7 +5,7 @@ import type { UserCache } from "../cache/userCache";
 export type Controller = (
     req   : Request,
     res   : Response,
-) => void | Promise<void>;
+) => Promise<void | Response> | void | Response;
 
 export type Middleware = (
     req   : Request,
