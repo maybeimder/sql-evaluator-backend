@@ -1,5 +1,5 @@
 // app/controllers/r-exams.controller.ts
-import { listAllExams, listProfessorExams, listStudentExams, newExam } from "../models/Exams.model";
+import { getExamByID, listAllExams, listProfessorExams, listStudentExams, newExam } from "../models/Exams.model";
 import { addMinutes } from "../utils/exams.helper";   
 import type { Controller } from "../types/types"
 import { NewQuestionInput, newQuestions } from "../models/Questions.model";
@@ -9,9 +9,6 @@ export const createExam: Controller = async (req, res) => {
     const professor = req.auth.user;
     const questions = req.body.questions;
 
-    console.log(token)
-    console.log(professor)
-    console.log(questions)
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
@@ -87,9 +84,36 @@ export const getExamsList: Controller = async (req, res) => {
     return res.status(403).json({ error: "Rol no reconocido" });
 };
 
-export const getExamInfoByID: Controller = (req, res) => {
-    res.json({ message: "Get exam info by ID" });
+export const getExamInfoByID: Controller = async (req, res) => {
+    const token = req.auth.token;
+    const professor = req.auth.user
+    const { examID } = req.params;  
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!professor?.Roles.includes(2) && !professor?.Roles.includes(1))
+        return res.status(403).json({ error: "No tiene permisos para crear examenes" });
+
+    if (!examID) {
+        return res.status(400).json({
+            error: "Falta examID en la URL"
+        });
+    }
+
+    const examInfo = await getExamByID(token, examID);
+    if (!examInfo) {
+        return res.status(404).json({
+            error: "Examen no encontrado"
+        });
+    }
+
+    return res.json({
+        ok: true,
+        exam: examInfo
+    });
 };
+
 
 export const getExamStatusByID: Controller = (req, res) => {
     res.json({ message: "Get exam status by ID" });

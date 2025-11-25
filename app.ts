@@ -41,70 +41,13 @@ app.use(cookieParser());
 
 // Registrar rutas y schemas
 app.use("/auth"       , authRoutes        );
-app.use("/users"      , usersRoutes       );
-app.use("/databases"  , databasesRoutes   );
+app.use("/databases"  , requireAuth , databasesRoutes   );
+app.use("/users"      , requireAuth , usersRoutes       );
 app.use("/exams"      , requireAuth , examsRoutes       );
 app.use("/exams"      , requireAuth , questionsRoutes   );
 app.use("/questions"  , requireAuth , questionsRoutes   );
 app.use("/assignments", requireAuth , assignmentsRoutes );
 app.use( errorHandler );
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("API running");
-});
-
-// Test Middleware
-app.get("/test-auth", requireAuth, (req, res) => {
-    res.json({
-        ok: true,
-        robleUser: req.auth.roble,
-        userCache: req.auth.user
-    });
-});
-
-// Test Middleware
-app.get("/test-admin-level", 
-  requireAuth, 
-  requireRole("ADMIN"),
-  (req, res) => {
-    res.json({
-        ok: true,
-        robleUser: req.auth.roble,
-        userCache: req.auth.user
-    });
-});
-
-// Test Middleware
-app.get("/test-professor-level", 
-  requireAuth, 
-  requireRole("PROFESSOR"),
-  (req, res) => {
-    res.json({
-        ok: true,
-        robleUser: req.auth.roble,
-        userCache: req.auth.user
-    });
-});
-
-// Test Middleware
-app.get("/test-student-level", 
-  requireAuth, 
-  requireRole("STUDENT"),
-  (req, res) => {
-    res.json({
-        ok: true,
-        robleUser: req.auth.roble,
-        userCache: req.auth.user
-    });
-});
-
-// Test Middleware
-app.post("/test-login", async (req, res) => {
-
-});
-
-
 
 // Levantar el servidor
 app.listen(PORT, async () => {

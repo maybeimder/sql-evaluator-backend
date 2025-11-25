@@ -1,18 +1,3 @@
-/* 
-
-Incluye TODA la gestión operativa del estudiante:
-
-    - asignar estudiante a examen
-    - leer / cerrar / bloquear sesión
-    - enviar SQL a exam-engine
-    - recibir output
-    - actualizar respuesta
-    - bloquear por múltiples logins
-    - mostrar tiempo restante
-
-Tablas utilizadas:
-Assignments, StudentAssignmentAnswers, AuditLogs
-*/
 
 // app/routes/r-assignments.routes.js
 import { Router } from "express";

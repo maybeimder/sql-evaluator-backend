@@ -1,15 +1,3 @@
-/* 
-Administrauión de usuarios:
-
-    - crear estudiantes
-    - crear profesores
-    - ver usuarios
-    - cambiar roles
-    - desautivar usuarios
-
-Tablas utilizadas:
-Users, Roles, UserRoles
-*/
 
 // app/routes/r-users.routes.js
 import { Router } from "express";
@@ -25,6 +13,9 @@ router.get("/id/:userID", au.getUserByID );
 
 // 🟧 [ POST ] /users
 router.post("/", au.createUser );
+
+// 🟩 [ GET ] /users/roles/:roleID
+router.get("/roles/:roleID", au.getUserListWithRole );
 
 // 🟧 [ POST ] /users/:userID/roles
 router.post("/id/:userID/roles", au.editUserRolesByID );

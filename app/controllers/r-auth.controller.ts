@@ -11,10 +11,10 @@ import { performTokenRefresh } from "../utils/auth.helper";
 // [1] Registro de usuario
 export const registerUser: Controller = async (req, res) => {
 
-    const { email, password, name, code } : 
-          { email:string, password:string, name:string, code:number } = req.body;
+    const { email, password, name, code, role } : 
+          { email:string, password:string, name:string, code:number, role:number|null } = req.body;
 
-    if (!email || !password || !name || !code)
+    if (!email || !password || !name || !code )
         return res.status(400).json({ error: "Faltan campos" });
 
     const robleResponse = await newRobleUser(email, password, name)
@@ -27,7 +27,7 @@ export const registerUser: Controller = async (req, res) => {
         return res.status(400).json({ error: robleResponse.message });
 
     if (robleResponse.message.includes("Revisa tu correo"))
-        savePendingCode(email, code)
+        savePendingCode(email, code, role)
         return res.json({ ok: true, message: robleResponse.message });
 
 };
@@ -74,9 +74,9 @@ export const loginUser: Controller = async (req, res) => {
 
     // Si no existe, registrarlo como estudiante
     if (!shadowUser) {
-        const code = getPendingCode(email);
+        const re = getPendingCode(email);
 
-        if (!code)
+        if ( !re?.code )
             return res.status(400).json({ error: "Código no encontrado en cache" });
 
         shadowUser = await newUser(
@@ -84,7 +84,7 @@ export const loginUser: Controller = async (req, res) => {
             email,
             robleLoginResponse.user.name,
             robleLoginResponse.user.RobleID,
-            code
+            re.code
         );
 
         if ( ! shadowUser )
@@ -93,13 +93,11 @@ export const loginUser: Controller = async (req, res) => {
         newUserRole(
             robleLoginResponse.accessToken,
             shadowUser.UserID,
-            [3]
+            re.role ? [re.role] : [3]
         );
 
         deletePendingCode(email);
     };
-
-    console.log("USER LOGUEADO CORRECTAMENTE", shadowUser)
 
     // 🔥 OBTENER ROLES
     const roles = await getUserRoles(robleLoginResponse.accessToken, shadowUser.UserID);
@@ -155,7 +153,6 @@ export const refreshToken: Controller = async (req, res) => {
     return res.json({
         ok: true,
         accessToken: result.newToken,
-        user: result.user,
     });
 };
 

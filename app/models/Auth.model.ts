@@ -32,7 +32,6 @@ export async function newRobleUser(email: string, password: string, name: string
 
 }
 
-
 // Verifica el codigo de confirmación de un usuario
 export async function verifyRobleEmail(email: string, code: number) {
 
@@ -47,7 +46,6 @@ export async function verifyRobleEmail(email: string, code: number) {
         }
 
 }
-
 
 export async function loginRoble(email: string, password: string) {
 
@@ -72,7 +70,6 @@ export async function loginRoble(email: string, password: string) {
         }
 
 }
-
 
 // Verifica el token de ROBLE
 export async function verifyRobleToken(token: string) {
@@ -99,7 +96,6 @@ export async function verifyRobleToken(token: string) {
         }
     }
 }
-
 
 // Refresca haciendo uso del refresh-token
 export async function refreshRobleToken(refreshToken: string) {

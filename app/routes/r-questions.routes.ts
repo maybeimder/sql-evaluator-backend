@@ -1,16 +1,3 @@
-/* 
-
-Gestión de preguntas dentro de un examen:
-
-    - crear preguntas
-    - editar preguntas
-    - eliminar preguntas
-    - obtener preguntas del examen
-    - expected output JSON
-
-Tablas utilizadas:
-ExamQuestions, Exams
-*/
 
 // app/routes/r-questions.routes.ts
 import { Router } from "express";

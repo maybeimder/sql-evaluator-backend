@@ -72,23 +72,40 @@ export async function listProfessorExams(token: string, professorID: string): Pr
     return res.data ?? null;
 }
 
-export async function listStudentExams(token: string, studentID: string): Promise<ExamRegister[]> {
+export async function listStudentExams(token: string, studentID: string) {
     const assignRes = await robleClient().get("/read", {
         headers: { Authorization: `Bearer ${token}` },
         params: { tableName: "Assignments", StudentID: studentID }
     });
 
-    if (!assignRes.data || assignRes.data.length === 0)
-        return [];
+    const assignments: AssignmentRegister[] = assignRes.data ?? [];
+    if (assignments.length === 0) return [];
 
-    const examIDs = assignRes.data.map((a: AssignmentRegister) => a.ExamID);
+    const examIDs = assignments.map(a => a.ExamID);
 
     const examsRes = await robleClient().get<Array<ExamRegister>>("/read", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { tableName: "Exams", ExamID: examIDs }
+        params: { tableName: "Exams" }
     });
 
-    return examsRes.data ?? [];
+    const allExams = examsRes.data ?? [];
+    const exams = allExams.filter(exam => examIDs.includes(exam.ExamID));
+
+    const result = exams.map(exam => {
+        const relatedAssignments = assignments.filter(a => a.ExamID === exam.ExamID);
+        const completed = relatedAssignments.filter(a => a.IsActive === false).length;
+        const pending = relatedAssignments.filter(
+            a => a.IsActive === true && a.IsBlocked === false
+        ).length;
+
+        return {
+            ...exam,
+            completed,
+            pending
+        };
+    });
+
+    return result;
 }
 
 export async function listAllExams(token: string, adminID: string): Promise<ExamRegister[]> {
@@ -100,13 +117,75 @@ export async function listAllExams(token: string, adminID: string): Promise<Exam
     return res.data ?? [];
 }
 
-export async function getExamByTitle(token: string, professorID: string, title: string) {
-    const res = await robleClient().get("/read", {
+export async function getExamByID(
+    token: string,
+    examID: string
+) {
+    // 1. Obtener examen
+    const examRes = await robleClient().get("/read", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { tableName: "Exams", ProfessorID: professorID, Title: title }
+        params: { tableName: "Exams", ExamID: examID }
     });
 
-    return res.data?.[0] ?? null;
+    const exam = examRes.data?.[0] ?? null;
+    if (!exam) return null;
+
+    // 2. Obtener assignments asociados
+    const assignmentsRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "Assignments", ExamID: examID }
+    });
+
+    const assignments = assignmentsRes.data ?? [];
+
+    const AssignedCount = assignments.length;
+    const AnsweredCount = assignments.filter((a:AssignmentRegister) => a.IsActive === false).length;
+
+    // 3. Obtener datos de estudiantes (Users table)
+    const studentIDs = [...new Set(assignments.map((a:AssignmentRegister) => a.StudentID))];
+
+    const studentData = await Promise.all(
+        studentIDs.map(async (id) => {
+            const res = await robleClient().get("/read", {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { tableName: "Users", UserID: id }
+            });
+
+            const user = res.data?.[0] ?? null;
+
+            return {
+                id,
+                name: user?.FullName || "—",
+                email: user?.Email || "—",
+            };
+        })
+    );
+
+    // 4. Enlazar assignments con los datos del usuario
+    const Students = assignments.map((assignment:AssignmentRegister) => {
+        const user = studentData.find(u => u.id === assignment.StudentID);
+
+        return {
+            id: assignment.StudentID,
+            name: user?.name || "—",
+            email: user?.email || "—",
+            status: assignment.IsActive === false ? "Completado" : "Pendiente",
+            score: null, // LATER
+        };
+    });
+
+    return {
+        ExamID: exam.ExamID,
+        Title: exam.Title,
+        Description: exam.Description ?? null,
+        StartTime: exam.StartTime,
+        EndTime: exam.EndTime,
+        AssignedCount,
+        AnsweredCount,
+        AvgScore: null, // pendiente
+        Students,
+    };
 }
+
 
 

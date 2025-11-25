@@ -1,16 +1,3 @@
-/* 
-Gestión completa del examen:
-
-    - crear examen
-    - editar examen
-    - activar/desactivar examen
-    - tiempos (StartTime, EndTime)
-    - asignación de BD
-    - ver listado de exámenes
-
-Tablas utilizadas:
-Exams, ExamQuestions, exams
-*/
 
 // app/routes/r-exams.routes.js
 import { Router } from "express";

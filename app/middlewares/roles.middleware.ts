@@ -24,7 +24,6 @@ export const requireRole = (level : "ADMIN" | "PROFESSOR" | "STUDENT"): Middlewa
             return next();
 
         } catch (e) {
-            console.log(e);
             return res.status(500).json({ error: "Error del servidor." });
         }
     }

@@ -26,7 +26,6 @@ export const requireAssignmentExists: Middleware = async (req, res, next) => {
     next();
 };
 
-
 export const requireUserIsNotBlocked: Middleware = async (req, res, next) => {
     if (!req.assignment)
         throw new HttpError(500, "El middleware requireAssignmentExists no fue ejecutado");

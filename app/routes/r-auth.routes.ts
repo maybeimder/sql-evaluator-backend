@@ -1,16 +1,3 @@
-/* 
-Todo lo relacionado con autenticación:
-
-    - login
-    - logout
-    - refresh tokens
-    - validación por email (token de emails table)
-    - bloqueo de múltiples sesiones
-    - seguridad del profesor (token enviado al correo)
-
-Tablas utilizadas:
-Users, UserRoles, Emails, AuditLogs
-*/
 
 // app/routes/r-auth.routes.ts
 import { Router } from "express";

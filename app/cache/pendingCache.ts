@@ -1,8 +1,9 @@
-const pendingMap = new Map<string, {code:number, expires:number}>();
+const pendingMap = new Map<string, {code:number, role:number|null, expires:number}>();
 
-export function savePendingCode(email: string, code: number) {
+export function savePendingCode(email: string, code: number, role:number|null=null) {
     pendingMap.set(email, {
         code,
+        role,
         expires: Date.now() + (5 * 60 * 1000)
     });
 }
@@ -16,7 +17,7 @@ export function getPendingCode(email: string) {
         return null;
     }
 
-    return entry.code;
+    return { code: entry.code, role:entry.role };
 }
 
 export function deletePendingCode(email: string) {

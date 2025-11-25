@@ -7,12 +7,11 @@ export type AssignmentRegister = {
     StudentID : string, 
     ExamID : string,
     SessionToken : string | null,
-    StartedAt: string,
+    StartedAt: string | null ,
     LastUpdatedAt: string,
     IsActive: boolean,
     IsBlocked: boolean,
 };
-
 
 // Crear un assignment
 export async function newAssignment(token: string, examID: string, studentID: string) {
@@ -27,7 +26,7 @@ export async function newAssignment(token: string, examID: string, studentID: st
                 StudentID: studentID,
                 ExamID: examID,
                 SessionToken: null,
-                StartedAt: now,
+                StartedAt: null,
                 LastUpdatedAt: now,
                 IsActive: false,
                 IsBlocked: false,
@@ -38,9 +37,17 @@ export async function newAssignment(token: string, examID: string, studentID: st
         }
     );
 
-    return AssignmentID;
+    return {
+        AssignmentID,
+        StudentID: studentID,
+        ExamID: examID,
+        SessionToken: null,
+        StartedAt: null,
+        LastUpdatedAt: now,
+        IsActive: false,
+        IsBlocked: false,
+    };
 }
-
 
 // Bloquear un assignment
 export async function blockAssignment(token: string, assignmentID: string) {
@@ -59,7 +66,6 @@ export async function blockAssignment(token: string, assignmentID: string) {
     return true;
 }
 
-
 // Obtener assignment por ID
 export async function getAssignmentByID(token: string, assignmentID: string) {
     const res = await robleClient().get("/read", {
@@ -68,4 +74,14 @@ export async function getAssignmentByID(token: string, assignmentID: string) {
     });
 
     return res.data?.[0] ?? null;
+}
+
+// Obtener assignment por StudentID
+export async function getAssignmentByStudentID(token: string, studentID: string) {
+    const res = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "Assignments", StudentID: studentID }
+    });
+
+    return res.data ?? null;
 }

@@ -14,7 +14,7 @@ export type UserRegister = {
     Roles?: number[]
 }
 
-export async function newUser(token: string, email: string, name: string, robleID: string, code:number) {
+export async function newUser(token: string, email: string, name: string, robleID: string, code: number) {
     const newUserID = crypto.randomUUID();
     const now = new Date().toISOString();
 
@@ -38,7 +38,7 @@ export async function newUser(token: string, email: string, name: string, robleI
         }
     );
 
-    if ( !res.data ){
+    if (!res.data) {
         console.error("[ROBLE_INSERT_ERROR]", res.data);
         return null;
     }
@@ -97,4 +97,64 @@ export async function getUserRoles(token: string, UserID: string) {
 
     return res.data;
 
+}
+
+export async function getUsersListByRole(
+    token: string,
+    role: number | null = null
+): Promise<UserRegister[]> {
+
+    const client = robleClient();
+
+    // ---------------------------------------
+    // 1️⃣ SIN role → devolver todos los usuarios
+    // ---------------------------------------
+    if (role === null) {
+        const usersRes = await client.get<UserRegister[]>("/read", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+                tableName: "Users",
+            },
+        });
+
+        return usersRes.data ?? [];
+    }
+
+    // ---------------------------------------
+    // 2️⃣ CON role → buscar en UserRoles
+    // ---------------------------------------
+    const rolesRes = await client.get<{ UserID: string; RoleID: string }[]>("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+            tableName: "UserRoles",
+            RoleID: role,
+        },
+    });
+
+    const roles = rolesRes.data ?? [];
+
+    if (roles.length === 0) return [];
+
+    // Extraer IDs únicos
+    const userIDs = Array.from(new Set(roles.map((r) => r.UserID)));
+
+    // ---------------------------------------
+    // 3️⃣ Traer todos los usuarios una sola vez
+    // ---------------------------------------
+    const usersRes = await client.get<UserRegister[]>("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+            tableName: "Users",
+        },
+    });
+
+    const users = usersRes.data ?? [];
+    console.log(users)
+
+    // ---------------------------------------
+    // 4️⃣ Filtrar los que tengan el role
+    // ---------------------------------------
+    const allowed = new Set(userIDs);
+
+    return users.filter((u) => allowed.has(u.UserID));
 }
