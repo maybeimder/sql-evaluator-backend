@@ -14,7 +14,7 @@ router.get("/id/:dbID", ad.getDatabaseInfoByID );
 // 🟧 [ POST ] /databases
 router.post("/", ad.registerDatabaseMetadata );
 
-// 🟧 [ POST ] /databases/delete/:databaseID
+// 🟥 [ DELETE ] /databases/delete/:databaseID
 router.delete("/delete/:databaseID", ad.deleteDatabaseByID );
 
 

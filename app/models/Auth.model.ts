@@ -17,7 +17,7 @@ type VerifyTokenResponse = {
 
 // Crear un nuevo usuario en ROBLE
 export async function newRobleUser(email: string, password: string, name: string)
-    : Promise<{ statusCode: number; message: string } | null> {4
+    : Promise<{ statusCode: number; message: string } | null> {
 
     const res = await robleClient("auth").post("/signup", {
         email: email,
@@ -31,6 +31,23 @@ export async function newRobleUser(email: string, password: string, name: string
     }
 
 }
+
+export async function newRobleMockUser(email: string, password: string, name: string)
+    : Promise<{ statusCode: number; message: string } | null> {
+
+    const res = await robleClient("auth").post("/signup-direct", {
+        email: email,
+        password: password,
+        name: name
+    });
+
+    return {
+        statusCode: res.status,
+        message: res.data?.message
+    }
+
+}
+
 
 // Verifica el codigo de confirmación de un usuario
 export async function verifyRobleEmail(email: string, code: number) {
@@ -48,7 +65,6 @@ export async function verifyRobleEmail(email: string, code: number) {
 }
 
 export async function loginRoble(email: string, password: string) {
-
         const result = await robleClient("auth").post("/login", {
             email: email,
             password: password
@@ -68,7 +84,6 @@ export async function loginRoble(email: string, password: string) {
                 role: user.role
             }
         }
-
 }
 
 // Verifica el token de ROBLE
@@ -108,6 +123,7 @@ export async function refreshRobleToken(refreshToken: string) {
         return res.data;
 
 }
+
 
 
 

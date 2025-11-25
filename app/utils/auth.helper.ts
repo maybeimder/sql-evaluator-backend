@@ -36,7 +36,6 @@ export async function performTokenRefresh(refreshToken?: string, res?: any) {
     }
 }
 
-
 export async function loadUserToCache( token:string, robleUser:any ) {
     const alreadyCached = getUserCache(robleUser.sub);
     

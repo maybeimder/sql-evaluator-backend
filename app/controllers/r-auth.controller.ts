@@ -2,7 +2,7 @@
 import { deletePendingCode, getPendingCode, savePendingCode } from "../cache/pendingCache";
 import { invalidateUserCache } from "../cache/userCache";
 import { COOKIE_SETTINGS } from "../config/config";
-import { loginRoble, newRobleUser, verifyRobleEmail } from "../models/Auth.model";
+import { loginRoble, newRobleMockUser, newRobleUser, verifyRobleEmail } from "../models/Auth.model";
 import { getUserID, getUserRoles, newUser, newUserRole, UserRegister } from "../models/Users.model";
 
 import type { Controller } from "../types/types";
@@ -156,3 +156,21 @@ export const refreshToken: Controller = async (req, res) => {
     });
 };
 
+export const registerMockupUser: Controller = async (req, res) => {
+
+    const { email, password, name, code, role } : 
+          { email:string, password:string, name:string, code:number, role:number|null } = req.body;
+
+    if (!email || !password || !name || !code )
+        return res.status(400).json({ error: "Faltan campos" });
+
+    const robleResponse = await newRobleMockUser(email, password, name)
+
+    if (!robleResponse)
+        return res.status(500).json({ error: "Error Inesperado" });
+
+    savePendingCode(email, code, role)
+    await loginUser(req, res)
+    return res.json({ ok: true, message: robleResponse.message });
+
+};

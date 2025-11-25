@@ -40,16 +40,6 @@ export async function newDatabase(
             headers: { Authorization: "Bearer " + token },
         }
     );
-    console.log({
-        Name: name,
-        Description: description,
-        UploadedAt: now,
-        Tables: tables,
-        Size: size,
-        DatabaseID: databaseID,
-        DumpFilePath: dumpFilePath
-    })
-    console.log(res)
 
     return {
         DatabaseID: databaseID,
@@ -105,9 +95,7 @@ export async function deleteDatabase(
             }
         }
     );
-    console.log(token)
-    console.log(databaseID)
-    console.log(res.data)
+
     return res.data;
 }
 

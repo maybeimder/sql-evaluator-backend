@@ -8,6 +8,9 @@ const router = Router();
 // 🟧 [ POST ] /auth/register
 router.post("/register", ac.registerUser );
 
+// 🟧 [ POST ] /auth//mock/mock/register
+router.post("/mock/mock/register", ac.registerMockupUser );
+
 // 🟧 [ POST ] /auth/verify
 router.post("/verify", ac.verifyEmail );
 

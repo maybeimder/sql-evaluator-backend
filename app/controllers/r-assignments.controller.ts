@@ -27,7 +27,7 @@ export const createAssignment: Controller = async (req, res) => {
     );
 
     if ( ! newAssignmentRecord)
-        return res.status(500).json({ error: "Error Inesperado creando el examen" });
+        return res.status(500).json({ error: "Error Inesperado creando las asignaciones" });
 
     return res.status(200).json({ ok: true, assignment: newAssignmentRecord });
 };

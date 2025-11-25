@@ -4,8 +4,8 @@ import { Request, Response } from "express";
 import { createDatabase, restoreSQL, restoreTAR, generateDBName, dropDatabase } from "../utils/postgres.helper";
 import { uploadToHomelab } from "../connection/uploadToHomelab";
 import fs from "fs";
-import { pgTest } from "../connection/postgres.connection";
-import { newDatabase } from "../models/Databases.model";   // 👈 IMPORTANTE
+import { connectToDB, pgTest } from "../connection/postgres.connection";
+import { newDatabase } from "../models/Databases.model";  
 
 export async function uploadAndRestore(req: Request, res: Response) {
     const token = req.auth?.token;
@@ -109,5 +109,42 @@ export async function deleteDatabaseGeneral(req: Request, res: Response) {
 
     } catch (err: any) {
         return res.status(500).json({ ok: false, error: err.message });
+    }
+}
+
+export async function queryDatabase(req: Request, res: Response) {
+    const token = req.auth?.token;
+    const user = req.auth?.user;
+    const { databaseID } = req.params;
+    const { query } = req.body;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    // Solo ADMIN (1) y PROFESSOR (2)
+    if (!user?.Roles.includes(1) && !user?.Roles.includes(2))
+        return res.status(403).json({ error: "No tiene permisos para consultar esta base" });
+
+    if (!databaseID)
+        return res.status(400).json({ error: "Debe indicar databaseID" });
+
+    if (!query)
+        return res.status(400).json({ error: "Debe enviar la query en el body" });
+
+    try {
+        const db = connectToDB(databaseID);
+        const result = await db.query(query);
+
+        return res.json({
+            ok: true,
+            rowCount: result.rowCount,
+            fields: result.fields.map((f: { name: any; }) => f.name),
+            rows: result.rows,
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            ok: false,
+            error: err.message,
+        });
     }
 }

@@ -28,7 +28,7 @@ export async function newAssignment(token: string, examID: string, studentID: st
                 SessionToken: null,
                 StartedAt: null,
                 LastUpdatedAt: now,
-                IsActive: false,
+                IsActive: true,
                 IsBlocked: false,
             }]
         },
@@ -44,7 +44,7 @@ export async function newAssignment(token: string, examID: string, studentID: st
         SessionToken: null,
         StartedAt: null,
         LastUpdatedAt: now,
-        IsActive: false,
+        IsActive: true,
         IsBlocked: false,
     };
 }
