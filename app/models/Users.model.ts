@@ -149,7 +149,6 @@ export async function getUsersListByRole(
     });
 
     const users = usersRes.data ?? [];
-    console.log(users)
 
     // ---------------------------------------
     // 4️⃣ Filtrar los que tengan el role

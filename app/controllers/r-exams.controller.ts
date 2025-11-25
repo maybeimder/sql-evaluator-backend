@@ -1,6 +1,6 @@
 // app/controllers/r-exams.controller.ts
 import { getExamByID, listAllExams, listProfessorExams, listStudentExams, newExam } from "../models/Exams.model";
-import { addMinutes } from "../utils/exams.helper";   
+import { addMinutes } from "../utils/exams.helper";
 import type { Controller } from "../types/types"
 import { NewQuestionInput, newQuestions } from "../models/Questions.model";
 
@@ -44,13 +44,13 @@ export const createExam: Controller = async (req, res) => {
     if (!newExamRecord)
         return res.status(500).json({ error: "Error Inesperado creando el examen" });
 
-    await newQuestions( token, questions.map((p:NewQuestionInput) => ({
-        ExamID          : newExamRecord.ExamID,
-        QuestionTitle   : p.QuestionTitle,
-        QuestionText    : p.QuestionText,
-        ExpectedOutput  : p.ExpectedOutput,
-        SolutionExample : p.SolutionExample,
-        Value           : p.Value
+    await newQuestions(token, questions.map((p: NewQuestionInput) => ({
+        ExamID: newExamRecord.ExamID,
+        QuestionTitle: p.QuestionTitle,
+        QuestionText: p.QuestionText,
+        ExpectedOutput: p.ExpectedOutput,
+        SolutionExample: p.SolutionExample,
+        Value: p.Value
     })));
 
     return res.status(200).json({ ok: true, exam: newExamRecord, questions: questions });
@@ -87,7 +87,7 @@ export const getExamsList: Controller = async (req, res) => {
 export const getExamInfoByID: Controller = async (req, res) => {
     const token = req.auth.token;
     const professor = req.auth.user
-    const { examID } = req.params;  
+    const { examID } = req.params;
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
@@ -113,7 +113,6 @@ export const getExamInfoByID: Controller = async (req, res) => {
         exam: examInfo
     });
 };
-
 
 export const getExamStatusByID: Controller = (req, res) => {
     res.json({ message: "Get exam status by ID" });

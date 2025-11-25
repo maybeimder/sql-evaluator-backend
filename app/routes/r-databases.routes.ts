@@ -6,13 +6,16 @@ import * as ad from "../controllers/r-databases.controller"
 const router = Router();
 
 // 🟩 [ GET ] /databases
-router.get("/", ad.getDatabasesList );
+router.get("/", ad.getDatabaseList );
 
 // 🟩 [ GET ] /databases/id/:dbID
-router.get("/id/:dbID", ad.getDatabaseByID );
+router.get("/id/:dbID", ad.getDatabaseInfoByID );
 
 // 🟧 [ POST ] /databases
-router.post("/", ad.createDatabase );
+router.post("/", ad.registerDatabaseMetadata );
+
+// 🟧 [ POST ] /databases/delete/:databaseID
+router.delete("/delete/:databaseID", ad.deleteDatabaseByID );
 
 
 export default router;
