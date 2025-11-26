@@ -1,0 +1,176 @@
+// app/controllers/r-auth.controller.ts
+import { deletePendingCode, getPendingCode, savePendingCode } from "../cache/pendingCache";
+import { invalidateUserCache } from "../cache/userCache";
+import { COOKIE_SETTINGS } from "../config/config";
+import { loginRoble, newRobleMockUser, newRobleUser, verifyRobleEmail } from "../models/Auth.model";
+import { getUserID, getUserRoles, newUser, newUserRole, UserRegister } from "../models/Users.model";
+
+import type { Controller } from "../types/types";
+import { performTokenRefresh } from "../utils/auth.helper";
+
+// [1] Registro de usuario
+export const registerUser: Controller = async (req, res) => {
+
+    const { email, password, name, code, role } : 
+          { email:string, password:string, name:string, code:number, role:number|null } = req.body;
+
+    if (!email || !password || !name || !code )
+        return res.status(400).json({ error: "Faltan campos" });
+
+    const robleResponse = await newRobleUser(email, password, name)
+
+    if (!robleResponse)
+        return res.status(500).json({ error: "Error Inesperado" });
+
+    // Harcoded de las responses de ROBLE
+    if (robleResponse.message.includes("verificada"))
+        return res.status(400).json({ error: robleResponse.message });
+
+    if (robleResponse.message.includes("Revisa tu correo"))
+        savePendingCode(email, code, role)
+        return res.json({ ok: true, message: robleResponse.message });
+
+};
+
+export const verifyEmail: Controller = async (req, res) => {
+
+    const { email, code } = req.body;
+
+    if (!code) return res.status(400).json({ error: "Código faltante" });
+
+    // Verificar email en ROBLE
+    const robleResponse = await verifyRobleEmail(email, code)
+
+    if (robleResponse?.statusCode == 400)
+        return res.json(robleResponse);
+
+    return res.json({
+        ok: true,
+        message: robleResponse?.message
+    });
+
+};
+
+export const loginUser: Controller = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password)
+        return res.status(400).json({ error: "Faltan Campos" });
+
+    // Hacer login en roble
+    const robleLoginResponse = await loginRoble(email, password);
+
+    if (!robleLoginResponse || !robleLoginResponse.accessToken)
+        return res.status(401).json({ error: "Credenciales inválidas" });
+
+    // Guardar en una cookie el refresh token para mantener la sesion
+    res.cookie("refreshToken", robleLoginResponse.refreshToken, {
+        ...COOKIE_SETTINGS,
+        maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    // Checkear si ya existe ese usuario en la tabla Users (shadow)
+    let shadowUser : UserRegister | null = await getUserID(robleLoginResponse.accessToken, robleLoginResponse.user.RobleID)
+
+    // Si no existe, registrarlo como estudiante
+    if (!shadowUser) {
+        const re = getPendingCode(email);
+
+        if ( !re?.code )
+            return res.status(400).json({ error: "Código no encontrado en cache" });
+
+        shadowUser = await newUser(
+            robleLoginResponse.accessToken,
+            email,
+            robleLoginResponse.user.name,
+            robleLoginResponse.user.RobleID,
+            re.code
+        );
+
+        if ( ! shadowUser )
+            return res.status(500).json({ error: "No se pudo registrar usuario en DB" });
+
+        newUserRole(
+            robleLoginResponse.accessToken,
+            shadowUser.UserID,
+            re.role ? [re.role] : [3]
+        );
+
+        deletePendingCode(email);
+    };
+
+    // 🔥 OBTENER ROLES
+    const roles = await getUserRoles(robleLoginResponse.accessToken, shadowUser.UserID);
+    shadowUser.Roles = roles.map(r => r.RoleID);
+
+    return res.json({
+        ok: true,
+        accessToken: robleLoginResponse.accessToken,
+        refreshToken: robleLoginResponse.refreshToken,
+        user: shadowUser,
+    })
+
+};
+
+export const logoutUser: Controller = (req, res) => {
+    try {
+        // 1. Borrar refreshToken
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.STATE !== "dev",
+            sameSite: "strict",
+            path: "/",
+        });
+
+        // 2. Borrar cache interno si existe
+        if (req.auth?.roble?.sub) {
+            invalidateUserCache(req.auth.roble.sub);
+        }
+
+        // 3. (Opcional) borrar también pending codes si venía registrándose
+        if (req.auth?.user?.Email) {
+            deletePendingCode(req.auth.user.Email);
+        }
+
+        return res.json({ ok: true, message: "Sesión cerrada correctamente" });
+
+    } catch (err) {
+        return res.status(500).json({ error: "Error cerrando sesión" });
+    }
+};
+
+export const refreshToken: Controller = async (req, res) => {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken)
+        return res.status(400).json({ error: "No hay token de refresco en la cookie" });
+
+    const result = await performTokenRefresh(refreshToken, res);
+
+    if (!result)
+        return res.status(401).json({ error: "Inicie sesion nuevamente" });
+
+    return res.json({
+        ok: true,
+        accessToken: result.newToken,
+    });
+};
+
+export const registerMockupUser: Controller = async (req, res) => {
+
+    const { email, password, name, code, role } : 
+          { email:string, password:string, name:string, code:number, role:number|null } = req.body;
+
+    if (!email || !password || !name || !code )
+        return res.status(400).json({ error: "Faltan campos" });
+
+    const robleResponse = await newRobleMockUser(email, password, name)
+
+    if (!robleResponse)
+        return res.status(500).json({ error: "Error Inesperado" });
+
+    savePendingCode(email, code, role)
+    await loginUser(req, res)
+    return res.json({ ok: true, message: robleResponse.message });
+
+};

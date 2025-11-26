@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2024",
+    "moduleResolution": "node",  
+
+    "verbatimModuleSyntax": false, 
+    "moduleDetection": "legacy", 
+
+    "strict": true,
+    "skipLibCheck": true,
+
+    "resolveJsonModule": true,
+    "allowArbitraryExtensions": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+}
