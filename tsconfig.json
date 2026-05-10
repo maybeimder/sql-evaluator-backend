@@ -2,17 +2,23 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es2024",
-    "moduleResolution": "node",  
-
-    "verbatimModuleSyntax": false, 
-    "moduleDetection": "legacy", 
-
+    "outDir": "dist",
+    "rootDir": ".",
+    "verbatimModuleSyntax": false,
+    "moduleDetection": "legacy",
     "strict": true,
     "skipLibCheck": true,
-
     "resolveJsonModule": true,
     "allowArbitraryExtensions": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
+  "include": [
+    "app.ts",
+    "app/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
