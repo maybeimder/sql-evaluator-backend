@@ -3,11 +3,11 @@ import crypto from "crypto";
 import { robleClient } from "../connection/robleClient";
 
 export type AssignmentRegister = {
-    AssignmentID : string,
-    StudentID : string, 
-    ExamID : string,
-    SessionToken : string | null,
-    StartedAt: string | null ,
+    AssignmentID: string,
+    StudentID: string,
+    ExamID: string,
+    SessionToken: string | null,
+    StartedAt: string | null,
     LastUpdatedAt: string,
     IsActive: boolean,
     IsBlocked: boolean,
@@ -20,18 +20,18 @@ export async function newAssignment(token: string, examID: string, studentID: st
     const now = new Date().toISOString();
 
     await robleClient().post("/insert", {
-            tableName: "Assignments",
-            records: [{
-                AssignmentID,
-                StudentID: studentID,
-                ExamID: examID,
-                SessionToken: null,
-                StartedAt: null,
-                LastUpdatedAt: now,
-                IsActive: true,
-                IsBlocked: false,
-            }]
-        },
+        tableName: "Assignments",
+        records: [{
+            AssignmentID,
+            StudentID: studentID,
+            ExamID: examID,
+            SessionToken: null,
+            StartedAt: null,
+            LastUpdatedAt: now,
+            IsActive: true,
+            IsBlocked: false,
+        }]
+    },
         {
             headers: { Authorization: "Bearer " + token }
         }
@@ -49,15 +49,41 @@ export async function newAssignment(token: string, examID: string, studentID: st
     };
 }
 
+export async function startAssignmentStudent(token: string, assignmentID:string) : Promise<{
+    ok : boolean,
+    sessionToken: string,
+    startedAt: string,
+}>{
+    const sessionToken = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await robleClient().post(
+        "/update",
+        {
+            tableName: "Assignments",
+            idColumn: "AssignmentID",
+            idValue: assignmentID,
+            updates: { SessionToken: sessionToken, StartedAt: now, LastUpdatedAt: now },
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return {
+        ok: true,
+        sessionToken,
+        startedAt: now
+    };
+}
+
 // Bloquear un assignment
 export async function blockAssignment(token: string, assignmentID: string) {
 
     await robleClient().post("/update", {
-            tableName: "Assignments",
-            idColumn: "AssignmentID",
-            idValue: assignmentID,
-            updates: { IsBlocked: true }
-        },
+        tableName: "Assignments",
+        idColumn: "AssignmentID",
+        idValue: assignmentID,
+        updates: { IsBlocked: true }
+    },
         {
             headers: { Authorization: "Bearer " + token }
         }

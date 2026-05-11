@@ -2,10 +2,9 @@
 
 import { Request, Response } from "express";
 import { createDatabase, restoreSQL, restoreTAR, generateDBName, dropDatabase } from "../utils/postgres.helper";
-import { uploadToHomelab } from "../connection/uploadToHomelab";
 import fs from "fs";
 import { connectToDB, pgTest } from "../connection/postgres.connection";
-import { newDatabase } from "../models/Databases.model";  
+import { newDatabase } from "../models/Databases.model";
 
 export async function uploadAndRestore(req: Request, res: Response) {
     const token = req.auth?.token;
@@ -14,7 +13,6 @@ export async function uploadAndRestore(req: Request, res: Response) {
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
 
-    // Roles permitidos: ADMIN (1) y PROFESSOR (2)
     if (!professor?.Roles?.includes(2) && !professor?.Roles?.includes(1))
         return res.status(403).json({ error: "No tiene permisos para crear bases de datos" });
 
@@ -22,46 +20,43 @@ export async function uploadAndRestore(req: Request, res: Response) {
         if (!req.file)
             return res.status(400).json({ ok: false, message: "No file uploaded" });
 
-        const localPath = req.file.path;
-        const fileName = req.file.originalname;
+        const localPath = req.file.path;       // /app/uploads/archivo.sql
+        const fileName  = req.file.originalname;
         const fileSizeBytes = req.file.size ?? 0;
 
-        // Nombre "bonito" para mostrar al profe (sin extensión)
         const baseName = fileName.replace(/\.(sql|tar|backup)$/i, "");
 
-        // 1. Subir el archivo al Homelab (vía SFTP)
-        //    Si tu función devuelve la ruta remota, úsala.
-        await uploadToHomelab(localPath, fileName);
-        const dumpFilePath = fileName; // o algo como `/teacherUploads/${fileName}` según tu homelab
-
-        // 2. Eliminar archivo temporal local
-        try { fs.unlinkSync(localPath); } catch { }
-
-        // 3. Crear base autogenerada en Postgres
+        // 1. Crear base autogenerada en Postgres
         const databaseID = generateDBName();
         await createDatabase(databaseID);
 
-        // 4. Restaurar según extensión
+        // 2. Restaurar según extensión usando la ruta local directamente
         if (fileName.endsWith(".sql")) {
-            await restoreSQL(databaseID, fileName);
+            await restoreSQL(databaseID, localPath);
         } else if (fileName.endsWith(".tar") || fileName.endsWith(".backup")) {
-            await restoreTAR(databaseID, fileName);
+            await restoreTAR(databaseID, localPath);
         } else {
-            return res.status(400).json({ ok: false, message: "Unsupported file format" });
+            await dropDatabase(databaseID);
+            return res.status(400).json({ ok: false, message: "Formato no soportado (.sql, .tar, .backup)" });
         }
 
-        // 5. Registrar METADATA en ROBLE (tabla Databases)
-        const sizeMB : number = +(fileSizeBytes / (1024 * 1024)).toFixed(2);
+        // 3. Eliminar archivo temporal local
+        try { fs.unlinkSync(localPath); } catch { }
+
+        // 4. Registrar metadata en ROBLE
+        const sizeMB: number = +(fileSizeBytes / (1024 * 1024)).toFixed(2);
 
         const dbMetadata = await newDatabase(
             token,
-            baseName || databaseID,                    
-            `Base restaurada desde ${fileName}`,   
-            0,                                     
-            sizeMB,                                 
-            databaseID,                                 
-            dumpFilePath                           
+            baseName || databaseID,
+            `Base restaurada desde ${fileName}`,
+            0,
+            sizeMB,
+            databaseID,
+            fileName
         );
+
+        console.log(dbMetadata)
 
         return res.json({
             ok: true,
@@ -121,7 +116,6 @@ export async function queryDatabase(req: Request, res: Response) {
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
 
-    // Solo ADMIN (1) y PROFESSOR (2)
     if (!user?.Roles.includes(1) && !user?.Roles.includes(2))
         return res.status(403).json({ error: "No tiene permisos para consultar esta base" });
 
@@ -138,13 +132,10 @@ export async function queryDatabase(req: Request, res: Response) {
         return res.json({
             ok: true,
             rowCount: result.rowCount,
-            fields: result.fields.map((f: { name: any; }) => f.name),
+            fields: result.fields.map((f: { name: any }) => f.name),
             rows: result.rows,
         });
     } catch (err: any) {
-        return res.status(500).json({
-            ok: false,
-            error: err.message,
-        });
+        return res.status(500).json({ ok: false, error: err.message });
     }
 }

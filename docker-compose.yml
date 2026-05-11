@@ -4,23 +4,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-runner}
     container_name: backend
     restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-3000}:3000"
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app_db}
     env_file:
       - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
     volumes:
-      - uploads_data:/app/uploads      
+      - uploads_data:/app/uploads
+      - .:/app                          # montado en dev, inofensivo en runner
+      - /app/node_modules               # protege node_modules del contenedor
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app_network
- 
+
   # ── PostgreSQL ────────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -42,13 +44,12 @@ services:
       retries: 10
     networks:
       - app_network
- 
+
 # ── Volumes & Networks ────────────────────────────────────────────────────────
 volumes:
   postgres_data:
   uploads_data:
- 
+
 networks:
   app_network:
     driver: bridge
- 

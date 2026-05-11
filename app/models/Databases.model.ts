@@ -31,7 +31,7 @@ export async function newDatabase(
             Description: description,
             UploadedAt: now,
             Tables: tables,
-            Size: size,
+            Size: Math.floor(size ?? 0),
             DatabaseID: databaseID,
             DumpFilePath: dumpFilePath,
         }],
@@ -40,6 +40,8 @@ export async function newDatabase(
             headers: { Authorization: "Bearer " + token },
         }
     );
+
+    console.log(res.data)
 
     return {
         DatabaseID: databaseID,

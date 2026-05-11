@@ -14,9 +14,6 @@ router.get("/id/:assignmentID", aa.searchAssignmentById );
 // 🟧 [ POST ] /assignments/id/:assignmentID/start
 router.get("/id/:assignmentID/start", aa.startAssignment );
 
-// 🟧 [ POST ] /assignments/id/:assignmentID/uptime
-router.get("/id/:assignmentID/uptime", aa.updateRemainingTime );
-
 // 🟧 [ POST ] /assignments/id/:assignmentID/sql
 router.get("/id/:assignmentID/sql", aa.submitQuery );
 

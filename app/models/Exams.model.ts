@@ -176,6 +176,7 @@ export async function getExamByID(
 
     return {
         ExamID: exam.ExamID,
+        DatabaseID: exam.DatabaseID,
         Title: exam.Title,
         Description: exam.Description ?? null,
         StartTime: exam.StartTime,
