@@ -7,6 +7,8 @@ import {
     deleteDatabase,
 } from "../models/Databases.model";
 import { deleteDumpFile, dropDatabase } from "../utils/postgres.helper";
+import { connectToDB } from "../connection/postgres.connection";
+import { promptOllama } from "../connection/ollama.connection";
 
 // 🟩 [GET] /databases
 export const getDatabaseList: Controller = async (req, res) => {
@@ -201,6 +203,69 @@ export const deleteDatabaseByID: Controller = async (req, res) => {
         deleted,
     });
 
+};
+
+// en r-databases.controller.ts
+
+export const generateExamQuestions: Controller = async (req, res) => {
+    const token = req.auth?.token;
+    const user = req.auth?.user;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!user?.Roles?.includes(1) && !user?.Roles?.includes(2))
+        return res.status(403).json({ error: "Sin permisos" });
+
+    const { databaseID } = req.params;
+    const { quantity = 5, difficulty = "medium" } = req.body;
+
+    // 1. Extraer esquema
+    const db = connectToDB(databaseID);
+    const schemaResult = await db.query(`
+        SELECT table_name, column_name, data_type
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position
+    `);
+
+    const schema = schemaResult.rows.reduce((acc: any, row: any) => {
+        if (!acc[row.table_name]) acc[row.table_name] = [];
+        acc[row.table_name].push(`${row.column_name} (${row.data_type})`);
+        return acc;
+    }, {});
+
+    const schemaText = Object.entries(schema)
+        .map(([table, cols]) => `${table}: ${(cols as string[]).join(", ")}`)
+        .join("\n");
+
+    // 2. Prompt
+    const prompt = `
+You are a SQL exam generator. Given this PostgreSQL schema:
+
+${schemaText}
+
+Generate exactly ${quantity} SQL exam questions with ${difficulty} difficulty.
+Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
+Format:
+[
+  {
+    "QuestionTitle": "short title",
+    "QuestionText": "question for the student",
+    "SolutionExample": "SELECT ...",
+    "Value": 5
+  }
+]
+`;
+
+    // 3. Llamar a Ollama
+    const raw = await promptOllama(prompt);
+
+    // 4. Parsear JSON de la respuesta
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const questions = JSON.parse(clean);
+
+    return res.json({ ok: true, questions });
 };
 
 

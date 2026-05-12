@@ -1,4 +1,13 @@
 services:
+  ollama:
+      image: ollama/ollama
+      container_name: ollama
+      ports:
+        - "11434:11434"
+      volumes:
+        - ollama_data:/root/.ollama
+      networks:
+        - app_network
   # ── Backend Node.js / Express (TypeScript) ────────────────────────────────────
   backend:
     build:
@@ -49,6 +58,8 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  ollama_data:
+
 
 networks:
   app_network:

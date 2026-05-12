@@ -2,6 +2,7 @@
 // app/routes/r-databases.routes.js
 import { Router } from "express";
 import * as ad from "../controllers/r-databases.controller"
+import { generateExamQuestions } from "../controllers/r-databases.controller";
 
 const router = Router();
 
@@ -10,6 +11,9 @@ router.get("/", ad.getDatabaseList );
 
 // 🟩 [ GET ] /databases/id/:dbID
 router.get("/id/:dbID", ad.getDatabaseInfoByID );
+
+// 🟧 [ POST ] /databases/id/:dbID/generate-questions
+router.post("/id/:databaseID/generate-questions", generateExamQuestions);
 
 // 🟧 [ POST ] /databases
 router.post("/", ad.registerDatabaseMetadata );
