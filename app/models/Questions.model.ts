@@ -62,3 +62,16 @@ export async function getQuestionsByExam(token: string, examID: string) {
     return res.data ?? [];
 }
 
+export async function getQuestionByID(
+    token: string,
+    questionID: string
+): Promise<QuestionRegister | null> {
+
+    const res = await robleClient().get<Array<QuestionRegister>>("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "ExamQuestions", QuestionID: questionID }
+    });
+
+    const questions = res.data ?? [];
+    return questions.length > 0 ? questions[0] : null;
+}
