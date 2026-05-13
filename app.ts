@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import Logger from "./app/utils/logger";
+import aiRoutes from "./app/routes/r-ai.routes";
+
 
 // Rutas
 import authRoutes from "./app/routes/r-auth.routes"
@@ -13,6 +15,8 @@ import examsRoutes from "./app/routes/r-exams.routes"
 import assignmentsRoutes from "./app/routes/r-assignments.routes"
 import questionsRoutes from "./app/routes/r-questions.routes" 
 import postgresRoutes from "./app/routes/p-databases.routes"
+import { aiLoggerMiddleware } from "./app/middlewares/ai-logger.middleware";
+
 
 // Middlewares
 import { requireAuth } from "./app/middlewares/auth.middleware";
@@ -23,6 +27,7 @@ import { errorHandler } from "./app/middlewares/errorHandler";
 import { ALLOWED_ORIGINS, API_CONFIG, CORS_OPTIONS } from "./app/config/config";
 import { pgTest } from "./app/connection/postgres.connection";
 import { runMigrations } from "./app/database/migration";
+import DependencyCheckService from "./app/services/dependency-check.service";
 
 dotenv.config();
 
@@ -30,6 +35,10 @@ const app = express();
 const PORT = API_CONFIG.port;
 
 // ========== MIDDLEWARES ==========
+
+app.use(aiLoggerMiddleware); // Registrar operaciones de IA
+app.use("/ai", aiRoutes);
+
 
 // CORS
 app.use(cors({ 
@@ -102,6 +111,8 @@ app.listen(PORT, async () => {
   Logger.info(`📍 Environment: ${API_CONFIG.environment}`);
   Logger.info(`🔒 Allowed Origins: ${ALLOWED_ORIGINS.join(", ")}`);
 
+
+  
   // Verificar conexión a base de datos
   try {
     const dbTest = await pgTest();
@@ -112,5 +123,20 @@ app.listen(PORT, async () => {
   } catch (error) {
     Logger.error("❌ Database connection failed", error);
     Logger.warn("Make sure PostgreSQL is running and .env variables are correct");
+  }
+
+    // Verificar que Ollama está disponible
+
+    try {
+    Logger.info("🤖 Verificando asistente local...");
+    const dependenciesOK = await DependencyCheckService.checkAllDependencies();
+    
+    if (dependenciesOK) {
+      Logger.success("✅ Asistente local completamente configurado");
+    } else {
+      Logger.warn("⚠️ Algunas dependencias no están locales");
+    }
+  } catch (error) {
+    Logger.error("Error verificando asistente", error);
   }
 });
