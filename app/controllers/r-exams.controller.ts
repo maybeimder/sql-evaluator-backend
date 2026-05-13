@@ -7,7 +7,7 @@ import { NewQuestionInput, newQuestions } from "../models/Questions.model";
 export const createExam: Controller = async (req, res) => {
     const token = req.auth.token;
     const professor = req.auth.user;
-    const questions = req.body.questions;
+    const questions = req.body.questions ?? [];
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
@@ -42,6 +42,9 @@ export const createExam: Controller = async (req, res) => {
 
     if (!newExamRecord)
         return res.status(500).json({ error: "Error Inesperado creando el examen" });
+    
+    if (!Array.isArray(questions) || questions.length === 0)
+        return res.status(200).json({ ok: true, exam: newExamRecord, questions: [] });
 
     const cachedQuestions = await newQuestions(token, questions.map((p: NewQuestionInput) => ({
         ExamID: newExamRecord.ExamID,
@@ -52,9 +55,7 @@ export const createExam: Controller = async (req, res) => {
         Value: p.Value
     })));
 
-    console.log(cachedQuestions)
-    
-    return res.status(200).json({ ok: true, exam: newExamRecord, questions: questions });
+    return res.status(200).json({ ok: true, exam: newExamRecord, questions: cachedQuestions });
 };
 
 export const getExamsList: Controller = async (req, res) => {

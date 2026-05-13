@@ -50,7 +50,7 @@ export async function newQuestions(
         }
     );
 
-    return records;
+    console.log("[newQuestions] roble response:", res.status, res.data);
 }
 
 export async function getQuestionsByExam(token: string, examID: string) {
