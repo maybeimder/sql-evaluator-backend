@@ -242,16 +242,18 @@ export const finishAssignment: Controller = async (req, res) => {
 
     const now = new Date().toISOString();
 
-    await robleClient().post(
+    await robleClient().put(
         "/update",
         {
             tableName: "Assignments",
             idColumn: "AssignmentID",
             idValue: id,
-            updates: { LastUpdatedAt: now },
+            updates: { LastUpdatedAt: now, IsActive: false },
         },
         { headers: { Authorization: `Bearer ${token}` } }
     );
+
+    console.log()
 
     return res.status(200).json({
         ok: true,

@@ -30,7 +30,6 @@ export async function newExam(
     const newExamID = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    // ✔ CORRECTO: enviar payload dentro de params
     const res = await robleClient().post("/insert", {
         tableName: "Exams",
         records: [
@@ -49,6 +48,8 @@ export async function newExam(
     }, {
         headers: { Authorization: "Bearer " + token }
     });
+
+    console.log("[newExam] roble response:", res.status, res.data);
 
     return {
         ExamID: newExamID,
@@ -94,20 +95,26 @@ export async function listStudentExams(token: string, studentID: string) {
     const result = exams.map(exam => {
         const relatedAssignments = assignments.filter(a => a.ExamID === exam.ExamID);
         const completed = relatedAssignments.filter(a => a.IsActive === false).length;
-        const pending = relatedAssignments.filter(
+        const pending   = relatedAssignments.filter(
             a => a.IsActive === true && a.IsBlocked === false
         ).length;
+
+        // Un estudiante tiene exactamente un assignment por examen
+        const assignment = relatedAssignments[0];
 
         return {
             ...exam,
             completed,
-            pending
+            pending,
+            AssignmentID  : assignment?.AssignmentID  ?? null,
+            IsBlocked     : assignment?.IsBlocked     ?? null,
+            IsActive      : assignment?.IsActive      ?? null,
+            StartedAt     : assignment?.StartedAt     ?? null,
         };
     });
 
     return result;
 }
-
 export async function listAllExams(token: string, adminID: string): Promise<ExamRegister[]> {
     const res = await robleClient().get("/read", {
         headers: { Authorization: `Bearer ${token}` },

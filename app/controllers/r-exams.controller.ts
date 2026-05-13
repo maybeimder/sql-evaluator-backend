@@ -3,6 +3,7 @@ import { getExamByID, listAllExams, listProfessorExams, listStudentExams, newExa
 import { addMinutes } from "../utils/exams.helper";
 import type { Controller } from "../types/types"
 import { NewQuestionInput, newQuestions } from "../models/Questions.model";
+import { robleClient } from "../connection/robleClient";
 
 export const createExam: Controller = async (req, res) => {
     const token = req.auth.token;
@@ -120,4 +121,59 @@ export const getExamStatusByID: Controller = (req, res) => {
     res.json({ message: "Get exam status by ID" });
 };
 
+export const updateExamByID: Controller = async (req, res) => {
+    const token     = req.auth.token;
+    const professor = req.auth.user;
+    const { examID } = req.params;
 
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!professor?.Roles.includes(2) && !professor?.Roles.includes(1))
+        return res.status(403).json({ error: "No tiene permisos para editar exámenes" });
+
+    if (!examID)
+        return res.status(400).json({ error: "Falta examID en la URL" });
+
+    const {
+        Title,
+        Description,
+        StartTime,
+        Duration,
+        DatabaseID,
+        AllowsRejoin,
+    } = req.body;
+
+    // Construir solo los campos que llegaron
+    const updates: Record<string, any> = {};
+    if (Title        !== undefined) updates.Title        = Title;
+    if (Description  !== undefined) updates.Description  = Description;
+    if (StartTime    !== undefined) updates.StartTime    = StartTime;
+    if (DatabaseID   !== undefined) updates.DatabaseID   = DatabaseID;
+    if (AllowsRejoin !== undefined) updates.AllowsRejoin = AllowsRejoin;
+
+    // Duration requiere recalcular EndTime
+    if (Duration !== undefined && StartTime !== undefined)
+        updates.EndTime = addMinutes(StartTime, Duration);
+    else if (Duration !== undefined) {
+        const exam = await getExamByID(token, examID);
+        if (!exam) return res.status(404).json({ error: "Examen no encontrado" });
+        updates.EndTime = addMinutes(exam.StartTime, Duration);
+    }
+
+    if (Object.keys(updates).length === 0)
+        return res.status(400).json({ error: "No se enviaron campos para actualizar" });
+
+    await robleClient().put(
+        "/update",
+        {
+            tableName : "Exams",
+            idColumn  : "ExamID",
+            idValue   : examID,
+            updates,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res.json({ ok: true, examID, updates });
+};

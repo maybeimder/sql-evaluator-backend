@@ -17,5 +17,7 @@ router.get("/id/:examID/status", ae.getExamStatusByID );
 // 🟧 [ POST ] /exams
 router.post("/", ae.createExam );
 
+// 🟨 [ POST ] /exams/id/:dbID
+router.post("/id/:examID", ae.updateExamByID );
 
 export default router;

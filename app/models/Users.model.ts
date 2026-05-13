@@ -74,7 +74,6 @@ export async function newUserRole(token: string, userID: string, roles: number[]
     return true;
 
 }
-
 // Toma un user basado en el ROBLEID
 export async function getUserID(token: string, robleID: string) {
 
@@ -156,4 +155,13 @@ export async function getUsersListByRole(
     const allowed = new Set(userIDs);
 
     return users.filter((u) => allowed.has(u.UserID));
+}
+
+export async function getUserByID(token: string, userID: string): Promise<UserRegister | null> {
+    const res = await robleClient().get<UserRegister[]>("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "Users", UserID: userID }
+    });
+
+    return res.data?.[0] ?? null;
 }

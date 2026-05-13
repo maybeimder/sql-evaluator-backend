@@ -50,7 +50,6 @@ export async function newQuestions(
         }
     );
 
-    console.log("[newQuestions] roble response:", res.status, res.data);
     return records;
 }
 

@@ -12,7 +12,6 @@ export const getQuestionsByExamID: Controller = async (req, res) => {
     const { examID } = req.params;
 
     const questions = await getQuestionsByExam(token, examID);
-    console.log(questions);
     return res.status(201).json({ ok: true, questions });
 };
 

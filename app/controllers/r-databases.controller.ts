@@ -218,8 +218,9 @@ export const generateExamQuestions: Controller = async (req, res) => {
     const { databaseID } = req.params;
     const { quantity = 5, difficulty = "medium" } = req.body;
 
-    // 1. Extraer esquema
     const db = connectToDB(databaseID);
+
+    // 1. Extraer esquema
     const schemaResult = await db.query(`
         SELECT table_name, column_name, data_type
         FROM information_schema.columns
@@ -248,6 +249,12 @@ ${schemaText}
 Generate exactly ${quantity} SQL exam questions with ${difficulty} difficulty.
 Use random seed ${seed} to ensure variety in the questions.
 Avoid repeating common questions like "list all rows" or "count all records".
+
+STRICT SQL RULES — violations will cause errors:
+- If you use SELECT DISTINCT, every column in ORDER BY MUST appear in the SELECT list.
+- Do not use columns in ORDER BY that are not selected.
+- Use only columns that exist in the schema above.
+
 Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
 Format:
 [
@@ -267,12 +274,47 @@ Format:
     const clean = raw.replace(/```json|```/g, "").trim();
     const questions = JSON.parse(clean);
 
-    return res.json({ ok: true, questions });
+    // 5. Ejecutar cada SolutionExample y poblar ExpectedOutput
+    const questionsWithOutput = await Promise.all(
+        questions.map(async (q: any) => {
+            let expectedOutput = null;
+            let solutionExample = q.SolutionExample;
+
+            // Primer intento
+            try {
+                const result = await db.query(solutionExample);
+                expectedOutput = { rows: result.rowCount, output: result.rows };
+            } catch (err: any) {
+                // Segundo intento — pedirle a Ollama que corrija la query
+                try {
+                    const fixPrompt = `
+This PostgreSQL query has an error: "${err.message}"
+
+Query: ${solutionExample}
+
+Fix the query so it runs without errors. 
+Respond ONLY with the corrected SQL query, no explanation, no markdown, no backticks.
+`;
+                    const fixedRaw = await promptOllama(fixPrompt);
+                    solutionExample = fixedRaw.replace(/```sql|```/g, "").trim();
+                    const fixedResult = await db.query(solutionExample);
+                    expectedOutput = { rows: fixedResult.rowCount, output: fixedResult.rows };
+                } catch (fixErr: any) {
+                    console.warn(`[generateExamQuestions] Query irreparable: ${fixErr.message}`);
+                }
+            }
+
+            return { ...q, SolutionExample: solutionExample, ExpectedOutput: expectedOutput };
+        })
+    );
+
+    console.log(questionsWithOutput)
+    return res.json({ ok: true, questions: questionsWithOutput });
 };
 
 export const generateSQLFromQuestion: Controller = async (req, res) => {
     const token = req.auth?.token;
-    const user  = req.auth?.user;
+    const user = req.auth?.user;
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
