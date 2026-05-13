@@ -2,22 +2,22 @@ import crypto from "crypto";
 import { robleClient } from "../connection/robleClient";
 
 export type QuestionRegister = {
-    QuestionID        : string,
-    ExamID            : string,
-    QuestionTitle     : string,
-    QuestionText      : string  | null,
-    ExpectedOutput    : any     | null,
-    SolutionExample   : string  | null,
-    Value             : number  | null
+    QuestionID: string,
+    ExamID: string,
+    QuestionTitle: string,
+    QuestionText: string | null,
+    ExpectedOutput: any | null,
+    SolutionExample: string | null,
+    Value: number | null
 }
 
 export type NewQuestionInput = {
-    ExamID          : string,
-    QuestionTitle   : string,
-    QuestionText    : string | null,
-    ExpectedOutput  : any | null,
-    SolutionExample : string | null,
-    Value           : number | null
+    ExamID: string,
+    QuestionTitle: string,
+    QuestionText: string | null,
+    ExpectedOutput: any | null,
+    SolutionExample: string | null,
+    Value: number | null
 };
 
 export async function newQuestions(
@@ -25,19 +25,19 @@ export async function newQuestions(
     questions: NewQuestionInput[]
 ): Promise<QuestionRegister[] | null> {
 
-    if ( ! questions || questions.length === 0 )
+    if (!questions || questions.length === 0)
         return [];
 
     const now = new Date().toISOString();
 
     const records = questions.map(q => ({
-        QuestionID      : crypto.randomUUID(),
-        ExamID          : q.ExamID,
-        QuestionTitle   : q.QuestionTitle,
-        QuestionText    : q.QuestionText,
-        ExpectedOutput  : q.ExpectedOutput,
-        SolutionExample : q.SolutionExample,
-        Value           : q.Value,
+        QuestionID: crypto.randomUUID(),
+        ExamID: q.ExamID,
+        QuestionTitle: q.QuestionTitle,
+        QuestionText: q.QuestionText,
+        ExpectedOutput: q.ExpectedOutput,
+        SolutionExample: q.SolutionExample,
+        Value: q.Value,
     }));
 
     const res = await robleClient().post("/insert",
@@ -51,6 +51,7 @@ export async function newQuestions(
     );
 
     console.log("[newQuestions] roble response:", res.status, res.data);
+    return records;
 }
 
 export async function getQuestionsByExam(token: string, examID: string) {
