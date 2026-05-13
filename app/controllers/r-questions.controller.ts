@@ -4,9 +4,13 @@ import { getQuestionsByExam, getQuestionByID, newQuestions} from "../models/Ques
 
 // Devuelve todas las preguntas asociadas a un examID específico
 export const getQuestionsByExamID: Controller = async (req, res) => {
-    const token = req.auth.token!;
-    const { examID } = req.params;
+    const token = req.auth.token;
 
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    const { examID } = req.params;
+    
     const questions = await getQuestionsByExam(token, examID);
     return res.status(201).json({ ok: true, questions });
 };
