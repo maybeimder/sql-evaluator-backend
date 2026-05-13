@@ -268,4 +268,58 @@ Format:
     return res.json({ ok: true, questions });
 };
 
+export const generateSQLFromQuestion: Controller = async (req, res) => {
+    const token = req.auth?.token;
+    const user  = req.auth?.user;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!user?.Roles?.includes(1) && !user?.Roles?.includes(2))
+        return res.status(403).json({ error: "Sin permisos" });
+
+    const { databaseID } = req.params;
+    const { question } = req.body;
+
+    if (!question)
+        return res.status(400).json({ error: "Falta el enunciado (question)" });
+
+    // 1. Extraer esquema
+    const db = connectToDB(databaseID);
+    const schemaResult = await db.query(`
+        SELECT table_name, column_name, data_type
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position
+    `);
+
+    const schema = schemaResult.rows.reduce((acc: any, row: any) => {
+        if (!acc[row.table_name]) acc[row.table_name] = [];
+        acc[row.table_name].push(`${row.column_name} (${row.data_type})`);
+        return acc;
+    }, {});
+
+    const schemaText = Object.entries(schema)
+        .map(([table, cols]) => `${table}: ${(cols as string[]).join(", ")}`)
+        .join("\n");
+
+    // 2. Prompt
+    const prompt = `
+You are a SQL expert. Given this PostgreSQL schema:
+
+${schemaText}
+
+Write a SQL query that answers this question:
+"${question}"
+
+Respond ONLY with the raw SQL query, no explanation, no markdown, no backticks.
+`;
+
+    // 3. Llamar a Ollama y retornar
+    const raw = await promptOllama(prompt);
+    const sql = raw.replace(/```sql|```/g, "").trim();
+
+    return res.json({ ok: true, sql });
+};
+
 

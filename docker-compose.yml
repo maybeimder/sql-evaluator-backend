@@ -1,13 +1,18 @@
 services:
   ollama:
-      image: ollama/ollama
-      container_name: ollama
-      ports:
-        - "11434:11434"
-      volumes:
-        - ollama_data:/root/.ollama
-      networks:
-        - app_network
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          
   # ── Backend Node.js / Express (TypeScript) ────────────────────────────────────
   backend:
     build:
