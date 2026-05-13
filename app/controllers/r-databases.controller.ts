@@ -205,8 +205,6 @@ export const deleteDatabaseByID: Controller = async (req, res) => {
 
 };
 
-// en r-databases.controller.ts
-
 export const generateExamQuestions: Controller = async (req, res) => {
     const token = req.auth?.token;
     const user = req.auth?.user;
@@ -239,6 +237,8 @@ export const generateExamQuestions: Controller = async (req, res) => {
         .map(([table, cols]) => `${table}: ${(cols as string[]).join(", ")}`)
         .join("\n");
 
+    const seed = Math.floor(Math.random() * 100000);
+
     // 2. Prompt
     const prompt = `
 You are a SQL exam generator. Given this PostgreSQL schema:
@@ -246,6 +246,8 @@ You are a SQL exam generator. Given this PostgreSQL schema:
 ${schemaText}
 
 Generate exactly ${quantity} SQL exam questions with ${difficulty} difficulty.
+Use random seed ${seed} to ensure variety in the questions.
+Avoid repeating common questions like "list all rows" or "count all records".
 Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
 Format:
 [

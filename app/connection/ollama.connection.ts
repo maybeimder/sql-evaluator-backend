@@ -8,6 +8,10 @@ export async function promptOllama(prompt: string, model = "llama3.2"): Promise<
             model,
             prompt,
             stream: false,
+            options: {
+                seed: Math.floor(Math.random() * 100000),  
+                temperature: 0.8,     
+            },
         }),
     });
 
