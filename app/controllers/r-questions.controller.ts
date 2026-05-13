@@ -8,7 +8,7 @@ export const getQuestionsByExamID: Controller = async (req, res) => {
     const { examID } = req.params;
 
     const questions = await getQuestionsByExam(token, examID);
-    return res.json(questions);
+    return res.status(201).json({ ok: true, questions });
 };
 
 export const createQuestionToExamID: Controller = async (req, res) => {
