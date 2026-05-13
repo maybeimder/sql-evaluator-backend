@@ -65,6 +65,8 @@ export async function uploadAndRestore(req: Request, res: Response) {
             message: "Database restored and registered successfully!",
         });
 
+        
+
     } catch (err: any) {
         console.error("ERROR en uploadAndRestore:", err);
         return res.status(500).json({ ok: false, error: err.message });
