@@ -12,6 +12,9 @@ import examsRoutes from "./app/routes/r-exams.routes"
 import assignmentsRoutes from "./app/routes/r-assignments.routes"
 import questionsRoutes from "./app/routes/r-questions.routes" 
 import postgresRoutes from "./app/routes/p-databases.routes"
+import answerRoutes from "./app/routes/r-answers.routes"
+import attemptsRouter from "./app/routes/r-attemps.routes";
+
 
 // Middlewares
 import { requireAuth } from "./app/middlewares/auth.middleware";
@@ -21,7 +24,6 @@ import { requireRole } from "./app/middlewares/roles.middleware"
 import initTables from "./app/database/initTables";
 import { errorHandler } from "./app/middlewares/errorHandler";
 import { ALLOWED_ORIGINS } from "./app/config/config";
-
 
 dotenv.config();
 
@@ -48,6 +50,9 @@ app.use("/exams"      , requireAuth , examsRoutes       );
 app.use("/exams"      , requireAuth , questionsRoutes   );
 app.use("/questions"  , requireAuth , questionsRoutes   );
 app.use("/assignments", requireAuth , assignmentsRoutes );
+app.use("/answers"    , requireAuth , answerRoutes      );
+app.use("/attempts"   , requireAuth , attemptsRouter    );
+
 app.use( errorHandler );
 
 // Levantar el servidor
