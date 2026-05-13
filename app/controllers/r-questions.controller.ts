@@ -10,8 +10,9 @@ export const getQuestionsByExamID: Controller = async (req, res) => {
         return res.status(400).json({ error: "No se pudo validar el token" });
 
     const { examID } = req.params;
-    
+
     const questions = await getQuestionsByExam(token, examID);
+    console.log(questions);
     return res.status(201).json({ ok: true, questions });
 };
 
