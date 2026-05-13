@@ -14,4 +14,7 @@ router.post("/id/:examID/questions", aq.createQuestionToExamID );
 // 🟩 [ GET ] /questions/id/:questionID
 router.get("/id/:questionID", aq.getQuestionInfoByID );
 
+// 🟩 [ GET ] /questions/id/:questionID/solution
+router.get("/id/:questionID/solution", aq.getExpectedSolutionByID);
+
 export default router;
