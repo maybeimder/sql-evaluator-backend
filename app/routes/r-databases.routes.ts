@@ -26,5 +26,7 @@ router.post("/", ad.registerDatabaseMetadata );
 // 🟥 [ DELETE ] /databases/delete/:databaseID
 router.delete("/delete/:databaseID", ad.deleteDatabaseByID );
 
+// 🟧 [ POST ] /databases/pseudocode/generate-questions
+router.post("/pseudocode/generate-questions", ad.generatePseudocodeQuestions);
 
 export default router;

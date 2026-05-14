@@ -11,14 +11,17 @@ type SameSiteType = "lax" | "strict" | "none";
 export const ALLOWED_ORIGINS = isProd
   ? ["https://byder.dev"]
   : [
-      "http://localhost:3001", 
-      "http://127.0.0.1:3001", 
-      "http://localhost:5173", 
+      "http://localhost:3001",
+      "http://127.0.0.1:3001",
+      "http://localhost:5173",
       "http://127.0.0.1:5173",
-      // Red local — acepta cualquier IP en 192.168.x.x
       /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/,
+      /^https:\/\/[\w-]+\.ngrok-free\.app$/,
+      /^https:\/\/[\w-]+\.ngrok-free\.dev$/,
     ];
-    
+
+const usingNgrok = process.env.USE_NGROK === "true";
+
 // 🔧 Configuración segura para cookies
 export const COOKIE_SETTINGS: {
     httpOnly: boolean;
@@ -29,7 +32,7 @@ export const COOKIE_SETTINGS: {
 } = {
     httpOnly: true,
     secure: process.env.STATE !== "dev",      
-    sameSite: process.env.STATE === "dev" 
+    sameSite: (isProd || usingNgrok)
         ? "lax" 
         : "none",
     path: "/",

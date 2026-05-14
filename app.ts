@@ -28,9 +28,22 @@ import { ALLOWED_ORIGINS } from "./app/config/config";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;4
 
-// Middlewares
+// TEMPORAL - para debuggear
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.path} - Origin: ${req.headers.origin}`);
+  next();
+});
+
+// Maneja OPTIONS antes que todo
+app.options("/{*path}", cors({
+    origin: ALLOWED_ORIGINS,
+    credentials: true,
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
 app.use(cors({ 
     origin: ALLOWED_ORIGINS,
     credentials: true,
@@ -40,6 +53,11 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  res.setHeader("ngrok-skip-browser-warning", "true");
+  next();
+});
 
 // Registrar rutas y schemas
 app.use("/auth"       , authRoutes        );

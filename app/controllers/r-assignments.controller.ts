@@ -7,7 +7,7 @@ import { queryDatabase } from "./p-databases.controller";
 import { gradeAssignment } from "../utils/Grader";
 import { getAttemptsByAssignment, insertAttempt } from "../models/AssignmentAttemps.model";
 import { getExamByID } from "../models/Exams.model";
-import { getQuestionByID } from "../models/Questions.model";
+import { getQuestionByID, getQuestionsByExam } from "../models/Questions.model";
 import interpreter from "../utils/Interpreter";
 
 export const createAssignment: Controller = async (req, res) => {
@@ -373,17 +373,21 @@ export const finishAssignment: Controller = async (req, res) => {
     if (!exam)
         return res.status(404).json({ error: "Examen no encontrado" });
 
-    if (!exam.DatabaseID)
+    if (exam.Type === "SQL" && !exam.DatabaseID)
         return res.status(400).json({ error: "El examen no tiene una base de datos asignada" });
 
     // 1. Calificar todas las respuestas y obtener puntaje
     const score = await gradeAssignment(token, id, assignment.ExamID, exam.DatabaseID);
 
-    // 2. Registrar intento con el puntaje
+    // Cap: no puede superar la suma de Value de las preguntas
+    const questions = await getQuestionsByExam(token, assignment.ExamID);
+    const totalPoints = questions.reduce((sum: number, q: any) => sum + (q.Value ?? 0), 0);
+    const cappedScore = totalPoints > 0 ? Math.min(score, totalPoints) : score;
+
+    // 2. Registrar intento con el puntaje capeado
     const previousAttempts = await getAttemptsByAssignment(token, id);
     const attemptNumber = previousAttempts.length + 1;
-    const attempt = await insertAttempt(token, id, score, attemptNumber);
-
+    const attempt = await insertAttempt(token, id, cappedScore, attemptNumber);
     const now = new Date().toISOString();
 
     await robleClient().put(
@@ -397,12 +401,11 @@ export const finishAssignment: Controller = async (req, res) => {
         { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log()
-
     return res.status(200).json({
         ok: true,
         attemptNumber,
-        score,
+        score: cappedScore,
+        totalPoints,
         finishedAt: now,
         attempt,
     });

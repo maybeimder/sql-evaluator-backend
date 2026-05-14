@@ -9,6 +9,7 @@ import {
 import { deleteDumpFile, dropDatabase } from "../utils/postgres.helper";
 import { connectToDB } from "../connection/postgres.connection";
 import { promptOllama } from "../connection/ollama.connection";
+import interpreter from "../utils/Interpreter";
 
 // 🟩 [GET] /databases
 export const getDatabaseList: Controller = async (req, res) => {
@@ -313,6 +314,121 @@ Respond ONLY with the corrected SQL query, no explanation, no markdown, no backt
     );
 
     console.log(questionsWithOutput)
+    return res.json({ ok: true, questions: questionsWithOutput });
+};
+
+export const generatePseudocodeQuestions: Controller = async (req, res) => {
+    const token = req.auth?.token;
+    const user  = req.auth?.user;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!user?.Roles?.includes(1) && !user?.Roles?.includes(2))
+        return res.status(403).json({ error: "Sin permisos" });
+
+    const { quantity = 5, difficulty = "medium" } = req.body;
+    const seed = Math.floor(Math.random() * 100000);
+
+    // 1. Prompt — generar preguntas + solución + casos de prueba
+    const prompt = `
+You are a pseudocode exam generator for beginner programming students.
+
+Generate exactly ${quantity} pseudocode exercises with ${difficulty} difficulty.
+Use random seed ${seed} to ensure variety.
+
+Each exercise must include:
+- A clear problem statement in Spanish
+- A solution written in simple pseudocode (variables, if/else, loops, input/output)
+- At least 2 test cases with inputs and their expected outputs
+
+STRICT RULES:
+- Use only basic pseudocode: Leer, Escribir, Si/Sino/FinSi, Mientras/FinMientras, Para/FinPara
+- The solution must be correct and produce the expected outputs for the given inputs
+- inputs must be an array of strings (one string per Leer statement)
+- outputs must be an array of strings (one string per Escribir statement)
+
+Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
+Format:
+[
+  {
+    "QuestionTitle": "short title",
+    "QuestionText": "problem statement in Spanish",
+    "SolutionExample": "Leer n\\nEscribir n * 2",
+    "Value": 5,
+    "TestCases": [
+      { "inputs": ["4"], "outputs": ["8"] },
+      { "inputs": ["7"], "outputs": ["14"] }
+    ]
+  }
+]
+`;
+
+    const raw   = await promptOllama(prompt);
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const questions = JSON.parse(clean);
+
+    // 2. Verificar cada solución ejecutándola contra sus casos de prueba
+    const questionsWithOutput = await Promise.all(
+        questions.map(async (q: any) => {
+            let solutionExample = q.SolutionExample;
+            let expectedOutput  = null;
+
+            // Usar el primer test case como ExpectedOutput
+            const primaryCase = q.TestCases?.[0] ?? null;
+
+            if (!primaryCase) return { ...q, ExpectedOutput: null };
+
+            // Primer intento — ejecutar con el interpreter
+            try {
+                const result   = interpreter.run(solutionExample, primaryCase.inputs);
+                const hasError = "error" in result;
+
+                if (hasError) throw new Error(result.error);
+
+                expectedOutput = {
+                    inputs : primaryCase.inputs,
+                    outputs: result.output,
+                };
+
+            } catch (err: any) {
+                // Segundo intento — pedirle a Ollama que corrija
+                try {
+                    const fixPrompt = `
+This pseudocode has an error when executed: "${err.message}"
+
+Pseudocode:
+${solutionExample}
+
+Inputs used: ${JSON.stringify(primaryCase.inputs)}
+Expected outputs: ${JSON.stringify(primaryCase.outputs)}
+
+Fix the pseudocode so it produces the expected outputs for those inputs.
+Use only: Leer, Escribir, Si/Sino/FinSi, Mientras/FinMientras, Para/FinPara.
+Respond ONLY with the corrected pseudocode, no explanation, no markdown, no backticks.
+`;
+                    const fixedRaw  = await promptOllama(fixPrompt);
+                    solutionExample = fixedRaw.replace(/```/g, "").trim();
+
+                    const fixedResult = interpreter.run(solutionExample, primaryCase.inputs);
+                    const hasError    = "error" in fixedResult;
+
+                    if (hasError) throw new Error(fixedResult.error);
+
+                    expectedOutput = {
+                        inputs : primaryCase.inputs,
+                        outputs: fixedResult.output,
+                    };
+
+                } catch (fixErr: any) {
+                    console.warn(`[generatePseudocodeQuestions] Irreparable: ${fixErr.message}`);
+                }
+            }
+
+            return { ...q, SolutionExample: solutionExample, ExpectedOutput: expectedOutput };
+        })
+    );
+
     return res.json({ ok: true, questions: questionsWithOutput });
 };
 

@@ -20,4 +20,10 @@ router.get("/roles/:roleID", au.getUserListWithRole );
 // 🟧 [ POST ] /users/:userID/roles
 router.post("/id/:userID/roles", au.editUserRolesByID );
 
+// 🟩 [ GET ] /users/me/average
+router.get("/me/average", au.getStudentAverage);
+
+// 🟩 [ GET ] /users/id/:studentID/history
+router.get("/id/:studentID/history", au.getStudentExamHistory);
+
 export default router;

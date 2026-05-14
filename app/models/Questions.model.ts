@@ -16,6 +16,7 @@ export type NewQuestionInput = {
     QuestionTitle: string,
     QuestionText: string | null,
     ExpectedOutput: any | null,
+    Inputs? : any | null
     SolutionExample: string | null,
     Value: number | null
 };

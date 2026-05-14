@@ -192,6 +192,7 @@ export async function getExamByID(
         Description: exam.Description ?? null,
         StartTime: exam.StartTime,
         EndTime: exam.EndTime,
+        Type: exam.Type,
         AssignedCount,
         AnsweredCount,
         AvgScore: null, // pendiente

@@ -54,7 +54,7 @@ export const createExam: Controller = async (req, res) => {
         ExamID: newExamRecord.ExamID,
         QuestionTitle: p.QuestionTitle,
         QuestionText: p.QuestionText,
-        ExpectedOutput: p.ExpectedOutput,
+        ExpectedOutput: p.Inputs ? { inputs:p.Inputs, outputs: p.ExpectedOutput } : p.ExpectedOutput,
         SolutionExample: p.SolutionExample,
         Value: p.Value
     })));

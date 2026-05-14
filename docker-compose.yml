@@ -8,10 +8,13 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - app_network
+    shm_size: '2gb'                    
     deploy:
       resources:
         limits:
-          memory: 4g
+          memory: 6g                   
+        reservations:
+          memory: 4g                   
           
   # ── Backend Node.js / Express (TypeScript) ────────────────────────────────────
   backend:
