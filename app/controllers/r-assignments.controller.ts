@@ -7,6 +7,7 @@ import { queryDatabase } from "./p-databases.controller";
 import { gradeAssignment } from "../utils/Grader";
 import { getAttemptsByAssignment, insertAttempt } from "../models/AssignmentAttemps.model";
 import { getExamByID } from "../models/Exams.model";
+import { getQuestionByID } from "../models/Questions.model";
 
 export const createAssignment: Controller = async (req, res) => {
     const token = req.auth.token;
@@ -65,7 +66,8 @@ export const startAssignment: Controller = async (req, res) => {
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
 
-    const { id } = req.params;
+    const id = req.params.assignmentID;
+    console.log(id)
 
     if (!id)
         return res.status(400).json({ error: "Falta el ID del assignment" });
@@ -160,16 +162,72 @@ export const submitAnswer: Controller = async (req, res) => {
     let answerOutput: object | null = null;
     let errorMessage: string | null = null;
 
+    const MAX_ROWS = 100;
+
     try {
         const db = connectToDB(exam.DatabaseID);
         const result = await db.query(answer);
         answerOutput = {
             rowCount: result.rowCount,
             fields: result.fields.map((f: { name: string }) => f.name),
-            rows: result.rows,
+            rows: result.rows.slice(0, MAX_ROWS),   // ← limitar rows
+            truncated: result.rows.length > MAX_ROWS,     // ← avisar al front
         };
     } catch (err: any) {
         errorMessage = err.message;
+    }
+    // Después de ejecutar la query del estudiante, comparar con ExpectedOutput
+    let isCorrect: boolean | null = null;
+
+    if (answerOutput && !errorMessage) {
+        const question = await getQuestionByID(token, questionID);
+
+        // Si ExpectedOutput no está cacheado pero hay SolutionExample, ejecutarlo y cachearlo ahora
+        if (!question?.ExpectedOutput && question?.SolutionExample && exam.DatabaseID) {
+            try {
+                const db = connectToDB(exam.DatabaseID);
+                const expectedResult = await db.query(question.SolutionExample);
+                const expectedOutput = {
+                    rowCount: expectedResult.rowCount,
+                    fields: expectedResult.fields.map((f: { name: string }) => f.name),
+                    rows: expectedResult.rows.slice(0, MAX_ROWS),
+                };
+
+                // Cachear en ExamQuestions para la próxima vez
+                await robleClient().put(
+                    "/update",
+                    {
+                        tableName: "ExamQuestions",
+                        idColumn: "QuestionID",
+                        idValue: questionID,
+                        updates: { ExpectedOutput: expectedOutput },
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                // Usar para comparar en este mismo submit
+                question.ExpectedOutput = expectedOutput;
+            } catch (err: any) {
+                console.warn(`[submitAnswer] No se pudo cachear ExpectedOutput: ${err.message}`);
+            }
+        }
+
+        // Comparar
+        if (answerOutput && !errorMessage && question?.ExpectedOutput) {
+            const expected = question.ExpectedOutput;
+            const student = answerOutput as any;
+
+            // ExpectedOutput puede ser solo un número (rowCount legacy)
+            // o el objeto completo { rowCount, fields, rows }
+            if (typeof expected === "number") {
+                isCorrect = student.rowCount === expected;
+            } else {
+                const sameRowCount = student.rowCount === expected.rowCount;
+                const sameFields = JSON.stringify(student.fields) === JSON.stringify(expected.fields ?? []);
+                const sameRows = JSON.stringify(student.rows) === JSON.stringify((expected.rows ?? []).slice(0, MAX_ROWS));
+                isCorrect = sameRowCount && sameFields && sameRows;
+            }
+        }
     }
 
     // Upsert en StudentAssignmentAnswers
@@ -177,17 +235,16 @@ export const submitAnswer: Controller = async (req, res) => {
         "/insert",
         {
             tableName: "StudentAssignmentAnswers",
-            record: {
+            records: [{
                 AssignmentID: assignmentID,
                 QuestionID: questionID,
                 Answer: answer,
                 AnswerOutput: answerOutput,
                 ErrorMessage: errorMessage,
-                IsCorrect: null,
+                IsCorrect: isCorrect,       // ← ya calculado
                 SubmittedAt: now,
                 LastModifiedAt: now,
-            },
-            conflictColumns: ["AssignmentID", "QuestionID"],
+            }],
         },
         { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -197,6 +254,7 @@ export const submitAnswer: Controller = async (req, res) => {
         submittedAt: now,
         answerOutput,
         errorMessage,
+        isCorrect,              // ← el front lo recibe aquí
     });
 };
 
@@ -207,7 +265,7 @@ export const finishAssignment: Controller = async (req, res) => {
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
 
-    const { id } = req.params;
+    const id = req.params.assignmentID;
 
     if (!id)
         return res.status(400).json({ error: "Falta el ID del assignment" });
@@ -220,6 +278,7 @@ export const finishAssignment: Controller = async (req, res) => {
     if (!assignment.IsActive)
         return res.status(409).json({ error: "El assignment ya fue finalizado" });
 
+    console.log(user?.UserID, assignment.StudentID)
     if (user?.UserID !== assignment.StudentID && !user?.Roles.includes(1))
         return res.status(403).json({ error: "No tiene permisos para finalizar este assignment" });
 

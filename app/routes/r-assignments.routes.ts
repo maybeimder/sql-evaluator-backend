@@ -12,16 +12,16 @@ router.post("/", aa.createAssignment );
 router.get("/id/:assignmentID", aa.searchAssignmentById );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/start
-router.get("/id/:assignmentID/start", aa.startAssignment );
+router.post("/id/:assignmentID/start", aa.startAssignment );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/sql
 router.get("/id/:assignmentID/sql", aa.submitQuery );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/submit
-router.get("/id/:assignmentID/submit", aa.submitAnswer );
+router.post("/id/:assignmentID/submit", aa.submitAnswer );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/finish
-router.get("/id/:assignmentID/finish", aa.finishAssignment );
+router.post("/id/:assignmentID/finish", aa.finishAssignment );
 
 // 🟧 [ POST ] /assignments/id/:assignmentID/block
 router.get("/id/:assignmentID/block", aa.blockStudent );

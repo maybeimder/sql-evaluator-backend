@@ -282,8 +282,12 @@ Format:
 
             // Primer intento
             try {
-                const result = await db.query(solutionExample);
-                expectedOutput = { rows: result.rowCount, output: result.rows };
+                const result = await db.query(q.SolutionExample);
+                expectedOutput = {
+                    rowCount: result.rowCount,   // ← no "rows"
+                    fields: result.fields.map((f: any) => f.name),
+                    rows: result.rows,
+                };
             } catch (err: any) {
                 // Segundo intento — pedirle a Ollama que corrija la query
                 try {
@@ -366,4 +370,44 @@ Respond ONLY with the raw SQL query, no explanation, no markdown, no backticks.
     return res.json({ ok: true, sql });
 };
 
+export const getDatabaseSchema: Controller = async (req, res) => {
+    const token = req.auth?.token;
+    const user = req.auth?.user;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!user?.Roles?.includes(1) && !user?.Roles?.includes(2) && !user?.Roles?.includes(3))
+        return res.status(403).json({ error: "Sin permisos" });
+
+    const { databaseID } = req.params;
+
+    const db = connectToDB(databaseID);
+
+    const result = await db.query(`
+        SELECT
+            table_name,
+            column_name,
+            data_type,
+            is_nullable,
+            column_default
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        ORDER BY table_name, ordinal_position
+    `);
+
+    // Agrupar por tabla
+    const schema = result.rows.reduce((acc: any, row: any) => {
+        if (!acc[row.table_name]) acc[row.table_name] = [];
+        acc[row.table_name].push({
+            column: row.column_name,
+            type: row.data_type,
+            nullable: row.is_nullable === "YES",
+            default: row.column_default ?? null,
+        });
+        return acc;
+    }, {});
+
+    return res.json({ ok: true, databaseID, schema });
+};
 

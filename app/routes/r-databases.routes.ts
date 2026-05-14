@@ -17,6 +17,9 @@ router.post("/id/:databaseID/generate-questions", ad.generateExamQuestions);
 // 🟧 [ POST ] /databases/id/:databaseID/solve-question
 router.post("/id/:databaseID/solve-question", ad.generateSQLFromQuestion);
 
+// 🟩 [ GET ] /databases/id/:databaseID/schema
+router.get("/id/:databaseID/schema", ad.getDatabaseSchema);
+
 // 🟧 [ POST ] /databases
 router.post("/", ad.registerDatabaseMetadata );
 

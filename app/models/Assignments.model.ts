@@ -57,7 +57,7 @@ export async function startAssignmentStudent(token: string, assignmentID:string)
     const sessionToken = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    await robleClient().post(
+    await robleClient().put(
         "/update",
         {
             tableName: "Assignments",

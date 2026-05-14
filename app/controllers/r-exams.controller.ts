@@ -1,5 +1,6 @@
 // app/controllers/r-exams.controller.ts
 import { getExamByID, listAllExams, listProfessorExams, listStudentExams, newExam } from "../models/Exams.model";
+import { getQuestionsByExam } from "../models/Questions.model";
 import { addMinutes } from "../utils/exams.helper";
 import type { Controller } from "../types/types"
 import { NewQuestionInput, newQuestions } from "../models/Questions.model";
@@ -176,4 +177,84 @@ export const updateExamByID: Controller = async (req, res) => {
     );
 
     return res.json({ ok: true, examID, updates });
+};
+
+export const getExamResultsByStudent: Controller = async (req, res) => {
+    const token   = req.auth.token;
+    const student = req.auth.user;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    const { examID } = req.params;
+    const studentID  = student?.UserID;
+
+    // 1. Examen
+    const exam = await getExamByID(token, examID);
+    if (!exam)
+        return res.status(404).json({ error: "Examen no encontrado" });
+
+    // 2. Assignment del estudiante para este examen
+    const assignmentsRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "Assignments", StudentID: studentID, ExamID: examID }
+    });
+    const assignment = assignmentsRes.data?.[0] ?? null;
+
+    if (!assignment)
+        return res.status(404).json({ error: "No tienes un assignment para este examen" });
+
+    // 3. Preguntas del examen
+    const questions = await getQuestionsByExam(token, examID);
+
+    // 4. Respuestas del estudiante
+    const answersRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "StudentAssignmentAnswers", AssignmentID: assignment.AssignmentID }
+    });
+    const answers: any[] = answersRes.data ?? [];
+
+    // 5. Mejor intento
+    const attemptsRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "AssignmentAttempts", AssignmentID: assignment.AssignmentID }
+    });
+    const attempts: any[] = attemptsRes.data ?? [];
+    const bestScore = attempts.length > 0
+        ? Math.max(...attempts.map((a: any) => a.Score))
+        : null;
+
+    // 6. Indexar respuestas por QuestionID
+    const answersByQuestion = new Map<string, any>();
+    for (const answer of answers)
+        answersByQuestion.set(answer.QuestionID, answer);
+
+    // 7. Cruzar preguntas con respuestas
+    const questionsWithAnswers = questions.map(q => {
+        const answer = answersByQuestion.get(q.QuestionID) ?? null;
+
+        return {
+            id              : q.QuestionID,
+            questionTitle   : q.QuestionTitle,
+            questionText    : q.QuestionText,
+            solutionExample : q.SolutionExample,
+            expectedOutput  : q.ExpectedOutput ?? null,
+            studentQuery    : answer?.Answer        ?? null,
+            studentOutput   : answer?.AnswerOutput  ?? null,
+            maxScore        : q.Value,
+            awardedScore    : (answer?.IsCorrect && q.Value) ? q.Value : 0,
+            isCorrect       : answer?.IsCorrect ?? null,
+        };
+    });
+
+    return res.json({
+        ok     : true,
+        result : {
+            id         : examID,
+            title      : exam.Title,
+            date       : exam.StartTime,
+            score      : bestScore,
+            questions  : questionsWithAnswers,
+        }
+    });
 };
