@@ -51,7 +51,11 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-app.use(express.json());
+app.use((req, res, next) => {
+    if (req.path.includes("/restore")) return next();
+    express.json({ limit: "50mb" })(req, res, next);
+});
+
 app.use(cookieParser());
 
 app.use((req, res, next) => {

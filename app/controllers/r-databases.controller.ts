@@ -319,7 +319,7 @@ Respond ONLY with the corrected SQL query, no explanation, no markdown, no backt
 
 export const generatePseudocodeQuestions: Controller = async (req, res) => {
     const token = req.auth?.token;
-    const user  = req.auth?.user;
+    const user = req.auth?.user;
 
     if (!token)
         return res.status(400).json({ error: "No se pudo validar el token" });
@@ -347,8 +347,11 @@ STRICT RULES:
 - The solution must be correct and produce the expected outputs for the given inputs
 - inputs must be an array of strings (one string per Leer statement)
 - outputs must be an array of strings (one string per Escribir statement)
+- All newlines inside string values MUST be escaped as \\n
+- Do not use literal newlines inside JSON string values
+- The response must be parseable by JSON.parse() without modifications
+- Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
 
-Respond ONLY with a valid JSON array, no explanation, no markdown, no backticks.
 Format:
 [
   {
@@ -364,15 +367,23 @@ Format:
 ]
 `;
 
-    const raw   = await promptOllama(prompt);
+    const raw = await promptOllama(prompt);
     const clean = raw.replace(/```json|```/g, "").trim();
-    const questions = JSON.parse(clean);
 
+    let questions;
+    try {
+        questions = JSON.parse(clean);
+    } catch {
+        const repaired = clean
+            .replace(/[\r\n]+/g, "\\n")
+            .replace(/\t/g, "\\t");
+        questions = JSON.parse(repaired);
+    }
     // 2. Verificar cada solución ejecutándola contra sus casos de prueba
     const questionsWithOutput = await Promise.all(
         questions.map(async (q: any) => {
             let solutionExample = q.SolutionExample;
-            let expectedOutput  = null;
+            let expectedOutput = null;
 
             // Usar el primer test case como ExpectedOutput
             const primaryCase = q.TestCases?.[0] ?? null;
@@ -381,13 +392,13 @@ Format:
 
             // Primer intento — ejecutar con el interpreter
             try {
-                const result   = interpreter.run(solutionExample, primaryCase.inputs);
+                const result = interpreter.run(solutionExample, primaryCase.inputs);
                 const hasError = "error" in result;
 
                 if (hasError) throw new Error(result.error);
 
                 expectedOutput = {
-                    inputs : primaryCase.inputs,
+                    inputs: primaryCase.inputs,
                     outputs: result.output,
                 };
 
@@ -407,16 +418,16 @@ Fix the pseudocode so it produces the expected outputs for those inputs.
 Use only: Leer, Escribir, Si/Sino/FinSi, Mientras/FinMientras, Para/FinPara.
 Respond ONLY with the corrected pseudocode, no explanation, no markdown, no backticks.
 `;
-                    const fixedRaw  = await promptOllama(fixPrompt);
+                    const fixedRaw = await promptOllama(fixPrompt);
                     solutionExample = fixedRaw.replace(/```/g, "").trim();
 
                     const fixedResult = interpreter.run(solutionExample, primaryCase.inputs);
-                    const hasError    = "error" in fixedResult;
+                    const hasError = "error" in fixedResult;
 
                     if (hasError) throw new Error(fixedResult.error);
 
                     expectedOutput = {
-                        inputs : primaryCase.inputs,
+                        inputs: primaryCase.inputs,
                         outputs: fixedResult.output,
                     };
 
