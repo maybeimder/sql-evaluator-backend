@@ -23,4 +23,7 @@ router.post("/", ae.createExam );
 // 🟨 [ POST ] /exams/id/:examID
 router.post("/id/:examID", ae.updateExamByID );
 
+// 🟥 [ DELETE ] /exams/id/:examID
+router.delete("/id/:examID", ae.deleteExamByID);
+
 export default router;

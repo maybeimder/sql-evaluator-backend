@@ -23,7 +23,8 @@ export const createExam: Controller = async (req, res) => {
         StartTime,
         Duration,
         DatabaseID,
-        AllowsRejoin
+        AllowsRejoin,
+        Type
     } = req.body;
 
     if (!StartTime || !Title || !Duration)
@@ -39,7 +40,8 @@ export const createExam: Controller = async (req, res) => {
         Description ?? null,
         StartTime,
         EndTime,
-        AllowsRejoin ?? false
+        AllowsRejoin ?? false,
+        Type
     );
 
     if (!newExamRecord)
@@ -256,5 +258,38 @@ export const getExamResultsByStudent: Controller = async (req, res) => {
             score      : bestScore,
             questions  : questionsWithAnswers,
         }
+    });
+};
+
+export const deleteExamByID: Controller = async (req, res) => {
+    const token     = req.auth.token;
+    const professor = req.auth.user;
+    const { examID } = req.params;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    if (!professor?.Roles?.includes(1) && !professor?.Roles?.includes(2))
+        return res.status(403).json({ error: "No tiene permisos para eliminar exámenes" });
+
+    // 1. Verificar que el examen existe
+    const exam = await getExamByID(token, examID);
+    if (!exam)
+        return res.status(404).json({ ok: false, error: "Examen no encontrado" });
+
+    // 2. Eliminar el examen en Roble
+    await robleClient().delete(`/delete`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: {
+            tableName : "Exams",
+            idColumn  : "ExamID",
+            idValue   : examID,
+        }
+    });
+
+    return res.json({
+        ok      : true,
+        message : `Examen "${exam.Title}" eliminado correctamente`,
+        examID,
     });
 };

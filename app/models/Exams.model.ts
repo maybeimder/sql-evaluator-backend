@@ -11,6 +11,7 @@ export type ExamRegister = {
     EndTime: string | null,
     AllowsRejoin: boolean,
     CreatedAt: string,
+    Type: string | null
 };
 
 import type { AssignmentRegister } from "./Assignments.model";
@@ -24,7 +25,8 @@ export async function newExam(
     description: string | null = null,
     startTime: string | null = null,
     endTime: string | null = null,
-    allowRejoin: boolean = false
+    allowRejoin: boolean = false,
+    type: string | null = null
 ): Promise<ExamRegister | null> {
 
     const newExamID = crypto.randomUUID();
@@ -42,6 +44,7 @@ export async function newExam(
                 StartTime: startTime,
                 EndTime: endTime,
                 AllowsRejoin: allowRejoin,
+                Type: type,
                 CreatedAt: now,
             }
         ]
@@ -60,6 +63,7 @@ export async function newExam(
         StartTime: startTime,
         EndTime: endTime,
         AllowsRejoin: allowRejoin,
+        Type: type,
         CreatedAt: now,
     }
 }

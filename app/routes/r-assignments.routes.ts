@@ -20,6 +20,9 @@ router.get("/id/:assignmentID/sql", aa.submitQuery );
 // 🟧 [ POST ] /assignments/id/:assignmentID/submit
 router.post("/id/:assignmentID/submit", aa.submitAnswer );
 
+// 🟧 [ POST ] /assignments/id/:assignmentID/pseudocode
+router.post("/id/:assignmentID/pseudocode", aa.runAndSubmitPseudocode);
+
 // 🟧 [ POST ] /assignments/id/:assignmentID/finish
 router.post("/id/:assignmentID/finish", aa.finishAssignment );
 

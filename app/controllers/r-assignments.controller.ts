@@ -8,6 +8,7 @@ import { gradeAssignment } from "../utils/Grader";
 import { getAttemptsByAssignment, insertAttempt } from "../models/AssignmentAttemps.model";
 import { getExamByID } from "../models/Exams.model";
 import { getQuestionByID } from "../models/Questions.model";
+import interpreter from "../utils/Interpreter";
 
 export const createAssignment: Controller = async (req, res) => {
     const token = req.auth.token;
@@ -83,9 +84,14 @@ export const startAssignment: Controller = async (req, res) => {
     if (!assignment.IsActive)
         return res.status(403).json({ error: "El assignment no está activo" });
 
-    if (assignment.StartedAt)
-        return res.status(409).json({ error: "El assignment ya fue iniciado" });
-
+    if (assignment.StartedAt) {
+        return res.status(200).json({
+            ok: true,
+            sessionToken: assignment.SessionToken,
+            startedAt: assignment.StartedAt,
+            alreadyStarted: true,
+        });
+    }
     // Solo el propio estudiante puede iniciar su assignment
     if (user?.UserID !== assignment.StudentID && !user?.Roles.includes(1))
         return res.status(403).json({ error: "No tiene permisos para iniciar este assignment" });
@@ -241,7 +247,7 @@ export const submitAnswer: Controller = async (req, res) => {
                 Answer: answer,
                 AnswerOutput: answerOutput,
                 ErrorMessage: errorMessage,
-                IsCorrect: isCorrect,       // ← ya calculado
+                IsCorrect: isCorrect,
                 SubmittedAt: now,
                 LastModifiedAt: now,
             }],
@@ -254,7 +260,86 @@ export const submitAnswer: Controller = async (req, res) => {
         submittedAt: now,
         answerOutput,
         errorMessage,
-        isCorrect,              // ← el front lo recibe aquí
+        isCorrect,
+    });
+};
+
+export const runAndSubmitPseudocode: Controller = async (req, res) => {
+    const token = req.auth.token;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    const { assignmentID } = req.params;
+    const { questionID, code, inputs = [] } = req.body;
+
+    if (!assignmentID || !questionID || !code)
+        return res.status(400).json({ error: "Faltan campos requeridos (assignmentID, questionID, code)" });
+
+    const assignment = await getAssignmentByID(token, assignmentID);
+
+    if (!assignment)
+        return res.status(404).json({ error: "Assignment no encontrado" });
+
+    if (assignment.IsBlocked)
+        return res.status(403).json({ error: "El estudiante está bloqueado" });
+
+    if (!assignment.StartedAt)
+        return res.status(400).json({ error: "El assignment aún no ha sido iniciado" });
+
+    // Ejecutar el pseudocódigo del estudiante
+    const now = new Date().toISOString();
+    const result = interpreter.run(code, inputs);
+
+    const hasError = "error" in result;
+
+    const answerOutput = {
+        inputs,
+        outputs: hasError ? [] : result.output,
+    };
+    const errorMessage = hasError ? result.error : null;
+
+    // Comparar contra ExpectedOutput de la pregunta
+    let isCorrect: boolean | null = null;
+
+    if (!errorMessage) {
+        const question = await getQuestionByID(token, questionID);
+
+        if (question?.ExpectedOutput) {
+            const expected = question.ExpectedOutput;
+
+            // ExpectedOutput formato: { inputs: [], outputs: [] }
+            if (typeof expected === "object" && Array.isArray(expected.outputs)) {
+                isCorrect = JSON.stringify(answerOutput.outputs) === JSON.stringify(expected.outputs);
+            }
+        }
+    }
+
+    // Guardar en StudentAssignmentAnswers
+    await robleClient().post(
+        "/insert",
+        {
+            tableName: "StudentAssignmentAnswers",
+            records: [{
+                AssignmentID: assignmentID,
+                QuestionID: questionID,
+                Answer: code,
+                AnswerOutput: answerOutput,
+                ErrorMessage: errorMessage,
+                IsCorrect: isCorrect,
+                SubmittedAt: now,
+                LastModifiedAt: now,
+            }],
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res.status(200).json({
+        ok: true,
+        submittedAt: now,
+        answerOutput,
+        errorMessage,
+        isCorrect,
     });
 };
 
