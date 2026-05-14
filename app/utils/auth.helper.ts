@@ -5,47 +5,43 @@ import { getUserID, getUserRoles } from "../models/Users.model";
 
 
 export async function performTokenRefresh(refreshToken?: string, res?: any) {
-    if ( ! refreshToken ) return null;
+    if (!refreshToken) return null;
 
     const refreshed = await refreshRobleToken(refreshToken);
 
-    // Si el token de refreshed falló pide un nuevo login
-    if (!refreshed) { 
-        res.clearCookie("refreshToken", {
+    if (!refreshed) {
+        res?.clearCookie("refreshToken", {  // ← optional chaining por si res es undefined
             ...COOKIE_SETTINGS,
             maxAge: 0
-        }); 
-
-        return null 
+        });
+        return null;
     }
 
-    // Guardar en cookie dinamicamente los refresh tokens
-    res.cookie("refreshToken", refreshed.refreshToken, {
+    res?.cookie("refreshToken", refreshed.refreshToken, {
         ...COOKIE_SETTINGS,
         maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Validar el nuevo access token obetenido
     const toValidate = await verifyRobleToken(refreshed.accessToken);
 
-    if (!toValidate.valid && !toValidate.user) { return null }
-    
+    if (!toValidate.valid || !toValidate.user) return null;  // ← && → || (ambos deben cumplirse)
+
     return {
         newToken: refreshed.accessToken,
         user: toValidate.user,
-    }
+    };
 }
 
-export async function loadUserToCache( token:string, robleUser:any ) {
+export async function loadUserToCache(token: string, robleUser: any) {
     const alreadyCached = getUserCache(robleUser.sub);
-    
-    if (alreadyCached) { 
-        return alreadyCached; 
-    
+
+    if (alreadyCached) {
+        return alreadyCached;
+
     } else {
         // Buscar usuario por ID en ROBLE
         const user = await getUserID(token, robleUser.sub)
-        if ( ! user ) return null;
+        if (!user) return null;
 
         const userRoles = await getUserRoles(token, user?.UserID);
         const roles = Array.isArray(userRoles) ? userRoles.map(r => r.RoleID) : [];

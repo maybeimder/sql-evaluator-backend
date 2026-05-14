@@ -52,38 +52,38 @@ export async function newRobleMockUser(email: string, password: string, name: st
 // Verifica el codigo de confirmación de un usuario
 export async function verifyRobleEmail(email: string, code: number) {
 
-        const res = await robleClient("auth").post("/verify-email", {
-            email: email,
-            code: code
-        });
+    const res = await robleClient("auth").post("/verify-email", {
+        email: email,
+        code: code
+    });
 
-        return {
-            statusCode: res.status,
-            message: res.data?.message
-        }
+    return {
+        statusCode: res.status,
+        message: res.data?.message
+    }
 
 }
 
 export async function loginRoble(email: string, password: string) {
-        const result = await robleClient("auth").post("/login", {
-            email: email,
-            password: password
-        });
+    const result = await robleClient("auth").post("/login", {
+        email: email,
+        password: password
+    });
 
-        const { accessToken, refreshToken, user } = result.data;
+    const { accessToken, refreshToken, user } = result.data;
 
-        if (!refreshToken || !accessToken || !user)
-            return null;
+    if (!refreshToken || !accessToken || !user)
+        return null;
 
-        return {
-            accessToken,
-            refreshToken,
-            user : {
-                RobleID: user.id,
-                name: user.name,
-                role: user.role
-            }
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            RobleID: user.id,
+            name: user.name,
+            role: user.role
         }
+    }
 }
 
 // Verifica el token de ROBLE
@@ -116,12 +116,15 @@ export async function verifyRobleToken(token: string) {
 export async function refreshRobleToken(refreshToken: string) {
     if (!refreshToken) return null;
 
+    try {
         const res = await robleClient("auth").post<{ accessToken: string, refreshToken: string }>("/refresh-token", {
             refreshToken: refreshToken
         });
-
         return res.data;
-
+    } catch (error: any) {
+        console.error("[ROBLE REFRESH ERROR]:", error?.response?.data);
+        return null; 
+    }
 }
 
 

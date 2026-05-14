@@ -11,7 +11,7 @@ export type UserCache = {
 };
 
 // Definir el tiempo de vida del caché
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 5*60 * 1000;
 
 const userCache = new Map<string, UserCache>();
 

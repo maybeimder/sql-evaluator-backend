@@ -140,20 +140,18 @@ export const logoutUser: Controller = (req, res) => {
 };
 
 export const refreshToken: Controller = async (req, res) => {
-    const refreshToken = req.cookies?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken      // cookie (mismo origen)
+                      ?? req.body?.refreshToken          // body (cross-origin)
+                      ?? req.headers["x-refresh-token"]; // header alternativo
 
     if (!refreshToken)
-        return res.status(400).json({ error: "No hay token de refresco en la cookie" });
+        return res.status(400).json({ error: "No hay token de refresco" });
 
     const result = await performTokenRefresh(refreshToken, res);
-
     if (!result)
         return res.status(401).json({ error: "Inicie sesion nuevamente" });
 
-    return res.json({
-        ok: true,
-        accessToken: result.newToken,
-    });
+    return res.json({ ok: true, accessToken: result.newToken });
 };
 
 export const registerMockupUser: Controller = async (req, res) => {
