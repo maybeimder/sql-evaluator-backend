@@ -5,6 +5,7 @@ import { addMinutes } from "../utils/exams.helper";
 import type { Controller } from "../types/types"
 import { NewQuestionInput, newQuestions } from "../models/Questions.model";
 import { robleClient } from "../connection/robleClient";
+import { getUserByID } from "../models/Users.model";
 
 export const createExam: Controller = async (req, res) => {
     const token = req.auth.token;
@@ -257,6 +258,106 @@ export const getExamResultsByStudent: Controller = async (req, res) => {
             date       : exam.StartTime,
             score      : bestScore,
             questions  : questionsWithAnswers,
+        }
+    });
+};
+
+export const getExamResultsByStudentID: Controller = async (req, res) => {
+    const token   = req.auth.token;
+    const user    = req.auth.user;
+    const { examID, studentID } = req.params;
+
+    if (!token)
+        return res.status(400).json({ error: "No se pudo validar el token" });
+
+    // Profesor, admin o el propio estudiante
+    if (
+        user?.UserID !== studentID &&
+        !user?.Roles?.includes(1) &&
+        !user?.Roles?.includes(2)
+    )
+        return res.status(403).json({ error: "Sin permisos" });
+
+    // 1. Examen
+    const exam = await getExamByID(token, examID);
+    if (!exam)
+        return res.status(404).json({ error: "Examen no encontrado" });
+
+    // 2. Usuario
+    const studentData = await getUserByID(token, studentID);
+
+    // 3. Assignment del estudiante para este examen
+    const assignmentsRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "Assignments", StudentID: studentID, ExamID: examID }
+    });
+    const assignment = assignmentsRes.data?.[0] ?? null;
+
+    if (!assignment)
+        return res.status(404).json({ error: "No existe un assignment para este estudiante y examen" });
+
+    // 4. Preguntas del examen
+    const questions = await getQuestionsByExam(token, examID);
+
+    // 5. Respuestas del estudiante
+    const answersRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "StudentAssignmentAnswers", AssignmentID: assignment.AssignmentID }
+    });
+    const answers: any[] = answersRes.data ?? [];
+
+    // 6. Mejor intento
+    const attemptsRes = await robleClient().get("/read", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { tableName: "AssignmentAttempts", AssignmentID: assignment.AssignmentID }
+    });
+    const attempts: any[]  = attemptsRes.data ?? [];
+    const bestScore        = attempts.length > 0
+        ? Math.max(...attempts.map((a: any) => a.Score))
+        : 0;
+    const totalPoints      = questions.reduce((sum: number, q: any) => sum + (q.Value ?? 0), 0);
+    const PASS_THRESHOLD   = 60;
+    const percentage       = totalPoints > 0 ? Math.min(100, Math.round((bestScore / totalPoints) * 100)) : 0;
+
+    // 7. Indexar respuestas por QuestionID
+    const answersByQuestion = new Map<string, any>();
+    for (const answer of answers)
+        answersByQuestion.set(String(answer.QuestionID), answer);
+
+    // 8. Cruzar preguntas con respuestas
+    const questionsWithAnswers = questions.map((q: any) => {
+        const answer = answersByQuestion.get(String(q.QuestionID)) ?? null;
+
+        return {
+            id             : q.QuestionID,
+            title          : q.QuestionTitle,
+            description    : q.QuestionText,
+            expectedOutput : q.ExpectedOutput ?? null,
+            studentQuery   : answer?.Answer       ?? null,
+            studentOutput  : answer?.AnswerOutput ?? null,
+            correct        : answer?.IsCorrect    ?? null,
+            points         : (answer?.IsCorrect && q.Value) ? q.Value : 0,
+            maxPoints      : q.Value,
+        };
+    });
+
+    return res.json({
+        ok     : true,
+        result : {
+            student  : {
+                id    : studentData?.UserID  ?? studentID,
+                name  : studentData?.FullName ?? "Desconocido",
+                email : studentData?.Email    ?? "",
+            },
+            exam     : {
+                id          : examID,
+                title       : exam.Title,
+                description : exam.Description ?? null,
+            },
+            score    : bestScore,
+            percentage,
+            status   : percentage >= PASS_THRESHOLD ? "Aprobado" : attempts.length === 0 ? "Pendiente" : "Reprobado",
+            questions: questionsWithAnswers,
         }
     });
 };

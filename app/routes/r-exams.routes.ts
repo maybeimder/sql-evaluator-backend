@@ -14,6 +14,9 @@ router.get("/id/:examID", ae.getExamInfoByID );
 // 🟩 [ GET ] /exams/id/:examID/results
 router.get("/id/:examID/results", ae.getExamResultsByStudent);
 
+// 🟩 [ GET ] /exams/id/:examID/results/:studentID
+router.get("/id/:examID/results/:studentID", ae.getExamResultsByStudentID);
+
 // 🟩 [ GET ] /exams/id/:examID/status
 router.get("/id/:examID/status", ae.getExamStatusByID );
 
